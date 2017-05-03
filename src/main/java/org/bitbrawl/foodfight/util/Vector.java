@@ -58,7 +58,7 @@ public final class Vector {
 		return direction;
 	}
 
-	public Vector opposite() {
+	public Vector getOpposite() {
 		return new Vector(-x, -y, magnitude, direction.getOpposite());
 	}
 

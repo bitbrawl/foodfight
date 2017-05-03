@@ -36,7 +36,7 @@ public abstract class JavaPlayer implements Player {
 	private static float staticHue;
 	private static Function<JavaPlayer, Logger> staticLoggerFunction;
 
-	static void setStaticFields(String versionName, Field field, Team team, Clock clock, Inventory inventory,
+	static final void setStaticFields(String versionName, Field field, Team team, Clock clock, Inventory inventory,
 			char symbol, float hue, Function<JavaPlayer, Logger> loggerFunction) {
 		staticVersionName = versionName;
 		staticField = field;

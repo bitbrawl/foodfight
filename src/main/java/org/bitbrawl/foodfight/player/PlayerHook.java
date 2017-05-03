@@ -5,7 +5,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.bitbrawl.foodfight.field.Field;
@@ -34,18 +33,14 @@ public final class PlayerHook implements AutoCloseable {
 
 	public static synchronized PlayerHook newPlayerHook(ClassLoader loader, String className, String versionName,
 			Field field, Team team, Inventory inventory, char symbol, float hue, Logger matchLogger,
-			Function<JavaPlayer, Logger> loggerFunction) {
+			Function<JavaPlayer, Logger> loggerFunction) throws ClassNotFoundException, NoSuchMethodException,
+			InstantiationException, IllegalAccessException, InvocationTargetException {
 		Clock clock = new Clock();
 		JavaPlayer player;
 		JavaPlayer.setStaticFields(versionName, field, team, clock, inventory, symbol, hue, loggerFunction);
-		try {
-			player = newPlayer(loader, className, versionName, field, team, clock, inventory, symbol, hue, matchLogger,
-					loggerFunction);
-			return new PlayerHook(player, loader, clock);
-		} catch (Throwable e) { // TODO Add to database
-			matchLogger.log(Level.SEVERE, "Unable to create player: " + versionName, e);
-			return newDummyHook(versionName, field, team, symbol, hue);
-		}
+		player = newPlayer(loader, className, versionName, field, team, clock, inventory, symbol, hue, matchLogger,
+				loggerFunction);
+		return new PlayerHook(player, loader, clock);
 	}
 
 	public static PlayerHook newDummyHook(String versionName, Field field, Team team, char symbol, float hue) {
