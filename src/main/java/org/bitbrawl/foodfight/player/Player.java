@@ -28,6 +28,7 @@ public interface Player extends FieldElement {
 
 	public static final double HEIGHT = 200.0;
 	public static final double MIN_HEIGHT = 100.0;
+	public static final double THROW_HEIGHT_FACTOR = 0.75;
 	public static final double FORWARD_MOVEMENT_SPEED = 10.0;
 	public static final double REVERSE_MOVEMENT_SPEED = 5.0;
 	public static final double DUCKED_FORWARD_MOVEMENT_SPEED = 5.0;

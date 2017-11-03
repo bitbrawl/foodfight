@@ -8,7 +8,7 @@ public interface Collision {
 
 	public Vector getLocation();
 
-	public Collection<? extends FieldElement> getObjects();
+	public Collection<FieldElement> getObjects();
 
 	public static final double KNOCKBACK = 20.0;
 

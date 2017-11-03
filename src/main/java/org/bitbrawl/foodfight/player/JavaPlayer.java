@@ -67,7 +67,7 @@ public abstract class JavaPlayer implements Player {
 		this.logger = loggerFunction.apply(this);
 		// TODO add to constructor
 		Vector randomPosition = Vector.cartesian(ThreadLocalRandom.current().nextDouble() * Field.WIDTH,
-				ThreadLocalRandom.current().nextDouble() * Field.HEIGHT);
+				ThreadLocalRandom.current().nextDouble() * Field.DEPTH);
 		state = new FieldElementState(randomPosition, HEIGHT, new Direction());
 	}
 
@@ -101,7 +101,7 @@ public abstract class JavaPlayer implements Player {
 				return false;
 			if (state.getLocation().getY() <= 0 && state.getHeading().angle(Direction.NORTH) <= 90.0)
 				return false;
-			if (state.getLocation().getY() >= Field.HEIGHT && state.getHeading().angle(Direction.SOUTH) <= 90.0)
+			if (state.getLocation().getY() >= Field.DEPTH && state.getHeading().angle(Direction.SOUTH) <= 90.0)
 				return false;
 			return true;
 		case MOVE_BACKWARD:
@@ -111,7 +111,7 @@ public abstract class JavaPlayer implements Player {
 				return false;
 			if (state.getLocation().getY() <= 0 && state.getHeading().angle(Direction.SOUTH) <= 90.0)
 				return false;
-			if (state.getLocation().getY() >= Field.HEIGHT && state.getHeading().angle(Direction.NORTH) <= 90.0)
+			if (state.getLocation().getY() >= Field.DEPTH && state.getHeading().angle(Direction.NORTH) <= 90.0)
 				return false;
 			return true;
 		case TURN_LEFT:
