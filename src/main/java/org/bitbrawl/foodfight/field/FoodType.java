@@ -1,5 +1,8 @@
 package org.bitbrawl.foodfight.field;
 
+import net.jcip.annotations.Immutable;
+
+@Immutable
 public enum FoodType {
 
 	APPLE("Apple", 20.0, 2.5), BANANA("Banana", 20.0, 2.0), SANDWICH("Sandwich", 20.0, 4.5), PIE("Pie", 50.0, 5.5);

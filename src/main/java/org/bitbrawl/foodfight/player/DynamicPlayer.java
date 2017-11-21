@@ -127,7 +127,7 @@ public class DynamicPlayer implements Player {
 	public PlayerState getState() {
 		lock.readLock().lock();
 		try {
-			return new PlayerState(symbol, team, location, height, heading, inventory, health, timeLeft,
+			return new PlayerState(symbol, team.getState(), location, height, heading, inventory, health, timeLeft,
 					TimeUnit.NANOSECONDS);
 		} finally {
 			lock.readLock().unlock();

@@ -1,5 +1,8 @@
 package org.bitbrawl.foodfight.state;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -11,13 +14,13 @@ import org.bitbrawl.foodfight.field.Field;
 import net.jcip.annotations.Immutable;
 
 @Immutable
-public final class FieldState implements Field {
+public final class FieldState implements Field, Serializable {
 
 	private final int turnNumber;
-	private final Collection<TeamState> teams;
-	private final Collection<PlayerState> players;
-	private final Collection<FoodState> foods;
-	private final Collection<Collision> collisions;
+	private Collection<TeamState> teams;
+	private transient Collection<PlayerState> players;
+	private Collection<FoodState> foods;
+	private Collection<Collision> collisions;
 
 	public FieldState(int turnNumber, Collection<? extends TeamState> teams, Collection<? extends FoodState> foods,
 			Collection<? extends Collision> collisions) {
@@ -55,5 +58,20 @@ public final class FieldState implements Field {
 	public Collection<Collision> getCollisions() {
 		return collisions;
 	}
+
+	private void readObject(ObjectInputStream s) throws ClassNotFoundException, IOException {
+		s.defaultReadObject();
+
+		teams = Collections.unmodifiableList(new ArrayList<>(teams));
+		List<PlayerState> tempPlayers = new ArrayList<>();
+		for (TeamState team : teams)
+			tempPlayers.addAll(team.getPlayers());
+		players = Collections.unmodifiableList(tempPlayers);
+		foods = Collections.unmodifiableList(new ArrayList<>(foods));
+		collisions = Collections.unmodifiableList(new ArrayList<>(collisions));
+
+	}
+
+	private static final long serialVersionUID = 4660387823717821917L;
 
 }

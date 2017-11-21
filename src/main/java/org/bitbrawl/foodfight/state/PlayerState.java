@@ -1,20 +1,20 @@
 package org.bitbrawl.foodfight.state;
 
+import java.io.Serializable;
 import java.util.concurrent.TimeUnit;
 
 import org.bitbrawl.foodfight.player.Inventory;
 import org.bitbrawl.foodfight.player.Player;
-import org.bitbrawl.foodfight.team.Team;
 import org.bitbrawl.foodfight.util.Direction;
 import org.bitbrawl.foodfight.util.Vector;
 
 import net.jcip.annotations.Immutable;
 
 @Immutable
-public final class PlayerState implements Player {
+public final class PlayerState implements Player, Serializable {
 
 	private final char symbol;
-	private final Team team;
+	private final TeamState team;
 	private final Vector location;
 	private final double height;
 	private final Direction heading;
@@ -22,8 +22,8 @@ public final class PlayerState implements Player {
 	private final double health;
 	private final long timeLeft;
 
-	public PlayerState(char symbol, Team team, Vector location, double height, Direction heading, Inventory inventory,
-			double health, long timeLeft, TimeUnit unit) {
+	public PlayerState(char symbol, TeamState team, Vector location, double height, Direction heading,
+			Inventory inventory, double health, long timeLeft, TimeUnit unit) {
 		this.symbol = symbol;
 		this.team = team;
 		this.location = location;
@@ -45,7 +45,7 @@ public final class PlayerState implements Player {
 	}
 
 	@Override
-	public Team getTeam() {
+	public TeamState getTeam() {
 		return team;
 	}
 
@@ -78,5 +78,7 @@ public final class PlayerState implements Player {
 	public PlayerState getState() {
 		return this;
 	}
+
+	private static final long serialVersionUID = -3493885953265425419L;
 
 }

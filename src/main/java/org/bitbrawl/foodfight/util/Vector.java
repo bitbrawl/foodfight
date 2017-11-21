@@ -1,9 +1,13 @@
 package org.bitbrawl.foodfight.util;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.Serializable;
+
 import net.jcip.annotations.Immutable;
 
 @Immutable
-public final class Vector {
+public final class Vector implements Serializable {
 
 	private final double x;
 	private final double y;
@@ -29,9 +33,9 @@ public final class Vector {
 	}
 
 	public static Vector cartesian(double x, double y) {
-		double speed = Math.hypot(x, y);
+		double magnitude = Math.hypot(x, y);
 		Direction direction = new Direction(Math.toDegrees(Math.atan2(x, -y)));
-		return new Vector(x, y, speed, direction);
+		return new Vector(x, y, magnitude, direction);
 	}
 
 	public static Vector polar(double magnitude, Direction direction) {
@@ -110,16 +114,19 @@ public final class Vector {
 
 	@Override
 	public int hashCode() {
-
-		int result = 17;
-
-		result = 31 * result + Double.hashCode(x);
-		result = 31 * result + Double.hashCode(y);
-
-		return result;
-
+		return Double.hashCode(x) * 31 + Double.hashCode(y);
 	}
 
 	public static final Vector ZERO = new Vector(0.0, 0.0, 0.0, new Direction(0.0));
+
+	private void readObject(ObjectInputStream s) throws ClassNotFoundException, IOException {
+		s.defaultReadObject();
+
+		magnitude = Math.hypot(x, y);
+		direction = new Direction(Math.toDegrees(Math.atan2(x, -y)));
+
+	}
+
+	private static final long serialVersionUID = 9088292157961730829L;
 
 }

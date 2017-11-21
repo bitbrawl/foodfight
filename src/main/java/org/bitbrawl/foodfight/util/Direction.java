@@ -1,11 +1,12 @@
 package org.bitbrawl.foodfight.util;
 
+import java.io.Serializable;
 import java.util.concurrent.ThreadLocalRandom;
 
 import net.jcip.annotations.Immutable;
 
 @Immutable
-public final class Direction {
+public final class Direction implements Serializable {
 
 	private final double direction;
 
@@ -69,11 +70,7 @@ public final class Direction {
 
 	@Override
 	public int hashCode() {
-		int result = 17;
-		long l = Double.doubleToLongBits(direction);
-		int c = (int) (l ^ (l >>> 32));
-		result = 31 * result + c;
-		return result;
+		return Double.hashCode(direction);
 	}
 
 	public static final Direction NORTH = new Direction(0.0);
@@ -90,5 +87,7 @@ public final class Direction {
 	}
 
 	private static final double DEGREES_PER_ROTATION = 360.0;
+
+	private static final long serialVersionUID = 7444944054530336843L;
 
 }

@@ -1,5 +1,7 @@
 package org.bitbrawl.foodfight.state;
 
+import java.io.Serializable;
+
 import org.bitbrawl.foodfight.field.FoodPiece;
 import org.bitbrawl.foodfight.field.FoodType;
 import org.bitbrawl.foodfight.util.Vector;
@@ -7,7 +9,7 @@ import org.bitbrawl.foodfight.util.Vector;
 import net.jcip.annotations.Immutable;
 
 @Immutable
-public final class FoodState implements FoodPiece {
+public final class FoodState implements FoodPiece, Serializable {
 
 	private final Vector location;
 	private final double height;
@@ -33,5 +35,7 @@ public final class FoodState implements FoodPiece {
 	public FoodType getType() {
 		return type;
 	}
+
+	private static final long serialVersionUID = 4916239267429508778L;
 
 }
