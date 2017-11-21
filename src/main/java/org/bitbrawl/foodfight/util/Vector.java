@@ -1,5 +1,8 @@
 package org.bitbrawl.foodfight.util;
 
+import net.jcip.annotations.Immutable;
+
+@Immutable
 public final class Vector {
 
 	private final double x;

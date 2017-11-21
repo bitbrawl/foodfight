@@ -1,9 +1,11 @@
 package org.bitbrawl.foodfight.field;
 
+import org.bitbrawl.foodfight.util.Vector;
+
 public interface FieldElement {
 
-	public FieldElementState getState();
+	public Vector getLocation();
 
-	public double getRadius();
+	public double getHeight();
 
 }

@@ -2,6 +2,9 @@ package org.bitbrawl.foodfight.util;
 
 import java.util.concurrent.ThreadLocalRandom;
 
+import net.jcip.annotations.Immutable;
+
+@Immutable
 public final class Direction {
 
 	private final double direction;

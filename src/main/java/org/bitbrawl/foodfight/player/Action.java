@@ -1,5 +1,8 @@
 package org.bitbrawl.foodfight.player;
 
+import net.jcip.annotations.Immutable;
+
+@Immutable
 public enum Action {
 
 	MOVE_FORWARD("Move forward"),

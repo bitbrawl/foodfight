@@ -3,6 +3,7 @@ package org.bitbrawl.foodfight.team;
 import java.util.Collection;
 
 import org.bitbrawl.foodfight.player.Player;
+import org.bitbrawl.foodfight.state.TeamState;
 
 public interface Team {
 
@@ -13,5 +14,7 @@ public interface Team {
 	public Collection<? extends Player> getPlayers();
 
 	public Score getScore();
+
+	public TeamState getState();
 
 }

@@ -4,81 +4,59 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import org.bitbrawl.foodfight.field.Field;
+import net.jcip.annotations.ThreadSafe;
 
-public final class Clock {
+@ThreadSafe
+final class Clock {
+
+	private volatile long timeLeftNanos;
+	private volatile long startTimeNanos;
 
 	private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
-	private volatile long timeSpentBeforeThisTurn = 0;
-	private volatile int turnNumber = 0;
-	private volatile long startTime;
-	private volatile boolean isRunning = false;
-
-	Clock() {
+	Clock(long limit, TimeUnit unit) {
+		timeLeftNanos = unit.toNanos(limit);
+		startTimeNanos = -1;
 	}
 
-	void startTurn(int turnNumber) {
-
+	void start() {
 		lock.writeLock().lock();
-		this.turnNumber = turnNumber;
-		startTime = System.nanoTime();
-		isRunning = true;
-		lock.writeLock().unlock();
-
+		try {
+			assert startTimeNanos < 0;
+			assert timeLeftNanos > 0;
+			startTimeNanos = System.nanoTime();
+		} finally {
+			lock.writeLock().unlock();
+		}
 	}
 
-	public long getTimeSpent(TimeUnit unit) {
-		return unit.convert(getTimeSpent(), TimeUnit.NANOSECONDS);
-	}
-
-	private long getTimeSpent() {
-		lock.readLock().lock();
-		long result = timeSpentBeforeThisTurn;
-		if (isRunning)
-			result += getTimeSpentThisTurn();
-		lock.readLock().unlock();
-		return result;
-	}
-
-	public long getTimeSpentThisTurn(TimeUnit unit) {
-		return unit.convert(getTimeSpentThisTurn(), TimeUnit.NANOSECONDS);
-	}
-
-	private long getTimeSpentThisTurn() {
-		lock.readLock().lock();
-		long result = System.nanoTime() - startTime;
-		lock.readLock().unlock();
-		return result;
-	}
-
-	public long getTimeLeft(TimeUnit unit) {
-		return unit.convert(TIME_LIMIT - getTimeSpent(), TimeUnit.NANOSECONDS);
-	}
-
-	public long getTimeLeftThisTurn(TimeUnit unit) {
-		lock.readLock().lock();
-		long timeLeft = TIME_LIMIT - timeSpentBeforeThisTurn;
-		long timePerTurn = timeLeft / (Field.TOTAL_TURNS - turnNumber);
-		long timeLeftThisTurn = timePerTurn - getTimeSpentThisTurn();
-		lock.readLock().unlock();
-		return unit.convert(timeLeftThisTurn, TimeUnit.NANOSECONDS);
-	}
-
-	void endTurn() {
+	void endIfRunning() {
 		lock.writeLock().lock();
-		timeSpentBeforeThisTurn += getTimeSpentThisTurn();
-		isRunning = false;
-		lock.writeLock().unlock();
+		try {
+			if (startTimeNanos < 0)
+				return;
+			long timeSpentThisTurn = System.nanoTime() - startTimeNanos;
+			timeLeftNanos -= timeSpentThisTurn;
+			startTimeNanos = -1;
+		} finally {
+			lock.writeLock().unlock();
+		}
 	}
 
-	boolean isOutOfTime() {
+	long timeLeft(TimeUnit unit) {
+		return unit.convert(timeLeftNanos(), TimeUnit.NANOSECONDS);
+	}
+
+	private long timeLeftNanos() {
 		lock.readLock().lock();
-		boolean result = timeSpentBeforeThisTurn > TIME_LIMIT;
-		lock.readLock().unlock();
-		return result;
+		try {
+			if (startTimeNanos < 0)
+				return timeLeftNanos;
+			long timeSpentThisTurn = System.nanoTime() - startTimeNanos;
+			return timeLeftNanos - timeSpentThisTurn;
+		} finally {
+			lock.readLock().unlock();
+		}
 	}
-
-	private static final long TIME_LIMIT = TimeUnit.SECONDS.toNanos(60);
 
 }

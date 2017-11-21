@@ -1,15 +1,33 @@
 package org.bitbrawl.foodfight.field;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 
+import org.bitbrawl.foodfight.random.RandomScalar;
 import org.bitbrawl.foodfight.util.Vector;
 
-public interface Collision {
+import net.jcip.annotations.Immutable;
 
-	public Vector getLocation();
+@Immutable
+public class Collision {
 
-	public Collection<FieldElement> getObjects();
+	private final Vector location;
+	private final Collection<FieldElement> objects;
 
-	public static final double KNOCKBACK = 20.0;
+	public Collision(Vector location, Collection<? extends FieldElement> objects) {
+		this.location = location;
+		this.objects = Collections.unmodifiableList(new ArrayList<>(objects));
+	}
+
+	public Vector getLocation() {
+		return location;
+	}
+
+	public Collection<FieldElement> getObjects() {
+		return objects;
+	}
+
+	public static final RandomScalar KNOCKBACK = new RandomScalar(20.0, 5.0);
 
 }
