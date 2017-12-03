@@ -79,6 +79,29 @@ public final class PlayerState implements Player, Serializable {
 		return this;
 	}
 
+	@Override
+	public boolean equals(Object o) {
+		if (this == o)
+			return true;
+		if (!(o instanceof PlayerState))
+			return false;
+		PlayerState state = (PlayerState) o;
+		return symbol == state.symbol && team.equals(state.team) && height == state.height
+				&& heading.equals(state.heading) && inventory.equals(state.inventory) && health == state.health
+				&& timeLeft == state.timeLeft;
+	}
+
+	@Override
+	public int hashCode() {
+		int result = Character.hashCode(symbol);
+		result = result * 31 + team.hashCode();
+		result = result * 31 + Double.hashCode(height);
+		result = result * 31 + heading.hashCode();
+		result = result * 31 + inventory.hashCode();
+		result = result * 31 + Double.hashCode(health);
+		return result * 31 + Long.hashCode(timeLeft);
+	}
+
 	private static final long serialVersionUID = -3493885953265425419L;
 
 }

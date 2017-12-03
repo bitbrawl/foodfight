@@ -1,4 +1,4 @@
-package org.bitbrawl.foodfight.random;
+package org.bitbrawl.foodfight.util;
 
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.DoubleSupplier;
