@@ -19,7 +19,7 @@ public final class PlayerUtils {
 		throw new AssertionError("PlayerUtils is not instantiable");
 	}
 
-	public boolean isValidAction(FieldState field, PlayerState player, Action action) {
+	public static boolean isValidAction(FieldState field, PlayerState player, Action action) {
 		Objects.requireNonNull(field, "field cannot be null");
 		Objects.requireNonNull(player, "player cannot be null");
 		if (action == null)
@@ -84,7 +84,7 @@ public final class PlayerUtils {
 
 	}
 
-	public boolean canPickup(PlayerState player, FoodState food, Hand hand) {
+	public static boolean canPickup(PlayerState player, FoodState food, Hand hand) {
 		Objects.requireNonNull(player, "player cannot be null");
 		Objects.requireNonNull(food, "food cannot be null");
 		Objects.requireNonNull(hand, "hand cannot be null");
@@ -106,7 +106,7 @@ public final class PlayerUtils {
 
 	}
 
-	public final Vector getArmLocation(PlayerState player, Hand hand) {
+	public static final Vector getArmLocation(PlayerState player, Hand hand) {
 		Objects.requireNonNull(player, "player cannot be null");
 		Objects.requireNonNull(hand, "hand cannot be null");
 
@@ -114,7 +114,7 @@ public final class PlayerUtils {
 
 	}
 
-	public final Direction getArmDirection(PlayerState player, Hand hand) {
+	public static final Direction getArmDirection(PlayerState player, Hand hand) {
 		Objects.requireNonNull(player, "player cannot be null");
 		Objects.requireNonNull(hand, "hand cannot be null");
 

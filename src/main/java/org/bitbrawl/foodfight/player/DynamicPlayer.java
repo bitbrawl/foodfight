@@ -120,7 +120,29 @@ public class DynamicPlayer implements Player {
 
 	@Override
 	public String toString() {
-		return "Player-" + team.getSymbol() + symbol;
+		StringBuilder result = new StringBuilder(getClass().getSimpleName());
+		result.append("[id=");
+		result.append(team.getSymbol());
+		result.append(symbol);
+		result.append(",location=");
+		result.append(location);
+		result.append(",height=");
+		lock.readLock().lock();
+		try {
+			result.append(height);
+			result.append(",heading=");
+			result.append(heading);
+			result.append(",inventory=");
+			result.append(inventory);
+			result.append(",health=");
+			result.append(health);
+			result.append(",timeLeft=");
+			result.append(timeLeft);
+			result.append("ns]");
+		} finally {
+			lock.readLock().unlock();
+		}
+		return result.toString();
 	}
 
 	@Override

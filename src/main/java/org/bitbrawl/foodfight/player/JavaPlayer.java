@@ -33,11 +33,6 @@ public abstract class JavaPlayer extends DynamicPlayer {
 
 	protected abstract Action playTurn(int turnNumber);
 
-	@Override
-	public final String toString() {
-		return getClass().getSimpleName() + "-" + getTeam().getSymbol() + getSymbol();
-	}
-
 	protected final Logger getLogger() {
 		return logger;
 	}

@@ -67,6 +67,20 @@ public final class FieldState implements Field, Serializable {
 		return this;
 	}
 
+	@Override
+	public String toString() {
+		StringBuilder result = new StringBuilder("FieldState[turnNumber=");
+		result.append(turnNumber);
+		result.append(",teams=");
+		result.append(teams);
+		result.append(",food=");
+		result.append(foods);
+		result.append(",collisions=");
+		result.append(collisions);
+		result.append(']');
+		return result.toString();
+	}
+
 	private void readObject(ObjectInputStream s) throws ClassNotFoundException, IOException {
 		s.defaultReadObject();
 

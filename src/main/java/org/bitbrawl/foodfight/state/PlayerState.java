@@ -102,6 +102,27 @@ public final class PlayerState implements Player, Serializable {
 		return result * 31 + Long.hashCode(timeLeft);
 	}
 
+	@Override
+	public String toString() {
+		StringBuilder result = new StringBuilder("PlayerState[id=");
+		result.append(team.getSymbol());
+		result.append(symbol);
+		result.append(",location=");
+		result.append(location);
+		result.append(",height=");
+		result.append(height);
+		result.append(",heading=");
+		result.append(heading);
+		result.append(",inventory=");
+		result.append(inventory);
+		result.append(",health=");
+		result.append(health);
+		result.append(",timeLeft=");
+		result.append(timeLeft);
+		result.append("ns]");
+		return result.toString();
+	}
+
 	private static final long serialVersionUID = 1L;
 
 }

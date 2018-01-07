@@ -31,6 +31,26 @@ public class Collision implements Serializable {
 		return objects;
 	}
 
+	@Override
+	public boolean equals(Object o) {
+		if (this == o)
+			return true;
+		if (!(o instanceof Collision))
+			return false;
+		Collision collision = (Collision) o;
+		return location.equals(collision.location) && objects.equals(collision.objects);
+	}
+
+	@Override
+	public int hashCode() {
+		return location.hashCode() * 31 + objects.hashCode();
+	}
+
+	@Override
+	public String toString() {
+		return "Collision[location=" + location + ",objects=" + objects + "]";
+	}
+
 	private void readObject(ObjectInputStream s) throws ClassNotFoundException, IOException {
 		s.defaultReadObject();
 		objects = Collections.unmodifiableSet(new LinkedHashSet<>(objects));

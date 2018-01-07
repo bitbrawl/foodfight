@@ -9,22 +9,29 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 final class Clock {
 
-	private volatile long timeLeftNanos;
-	private volatile long startTimeNanos;
+	// nanoseconds
+	private volatile long timeLeft;
+	// nanoseconds
+	private volatile long startTime;
 
 	private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
 	Clock(long limit, TimeUnit unit) {
-		timeLeftNanos = unit.toNanos(limit);
-		startTimeNanos = -1;
+		timeLeft = unit.toNanos(limit);
+		startTime = -1;
+	}
+
+	@Override
+	public String toString() {
+		return "Clock[timeLeft=" + timeLeft + ",startTime=" + startTime + "]";
 	}
 
 	void start() {
 		lock.writeLock().lock();
 		try {
-			assert startTimeNanos < 0;
-			assert timeLeftNanos > 0;
-			startTimeNanos = System.nanoTime();
+			assert startTime < 0;
+			assert timeLeft > 0;
+			startTime = System.nanoTime();
 		} finally {
 			lock.writeLock().unlock();
 		}
@@ -33,11 +40,11 @@ final class Clock {
 	void endIfRunning() {
 		lock.writeLock().lock();
 		try {
-			if (startTimeNanos < 0)
+			if (startTime < 0)
 				return;
-			long timeSpentThisTurn = System.nanoTime() - startTimeNanos;
-			timeLeftNanos -= timeSpentThisTurn;
-			startTimeNanos = -1;
+			long timeSpentThisTurn = System.nanoTime() - startTime;
+			timeLeft -= timeSpentThisTurn;
+			startTime = -1;
 		} finally {
 			lock.writeLock().unlock();
 		}
@@ -50,10 +57,10 @@ final class Clock {
 	private long timeLeftNanos() {
 		lock.readLock().lock();
 		try {
-			if (startTimeNanos < 0)
-				return timeLeftNanos;
-			long timeSpentThisTurn = System.nanoTime() - startTimeNanos;
-			return timeLeftNanos - timeSpentThisTurn;
+			if (startTime < 0)
+				return timeLeft;
+			long timeSpentThisTurn = System.nanoTime() - startTime;
+			return timeLeft - timeSpentThisTurn;
 		} finally {
 			lock.readLock().unlock();
 		}

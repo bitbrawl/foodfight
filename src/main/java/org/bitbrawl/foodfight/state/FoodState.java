@@ -58,6 +58,11 @@ public final class FoodState implements FoodPiece, Serializable {
 		return result * 31 + type.hashCode();
 	}
 
+	@Override
+	public String toString() {
+		return "FoodState[location=" + location + ",height=" + height + ",type=" + type + ']';
+	}
+
 	private static final long serialVersionUID = 1L;
 
 }
