@@ -3,10 +3,10 @@ package org.bitbrawl.foodfight.player;
 import java.util.concurrent.TimeUnit;
 
 import org.bitbrawl.foodfight.field.FieldElement;
-import org.bitbrawl.foodfight.random.RandomScalar;
 import org.bitbrawl.foodfight.state.PlayerState;
 import org.bitbrawl.foodfight.team.Team;
 import org.bitbrawl.foodfight.util.Direction;
+import org.bitbrawl.foodfight.util.RandomScalar;
 
 public interface Player extends FieldElement {
 

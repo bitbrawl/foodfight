@@ -36,6 +36,28 @@ public final class FoodState implements FoodPiece, Serializable {
 		return type;
 	}
 
+	@Override
+	public FoodState getState() {
+		return this;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o)
+			return true;
+		if (!(o instanceof FoodState))
+			return false;
+		FoodState food = (FoodState) o;
+		return location.equals(food.location) && height == food.height && type.equals(food.type);
+	}
+
+	@Override
+	public int hashCode() {
+		int result = location.hashCode();
+		result = result * 31 + Double.hashCode(height);
+		return result * 31 + type.hashCode();
+	}
+
 	private static final long serialVersionUID = 1L;
 
 }

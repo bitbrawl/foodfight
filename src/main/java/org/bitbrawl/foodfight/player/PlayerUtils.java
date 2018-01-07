@@ -3,6 +3,7 @@ package org.bitbrawl.foodfight.player;
 import java.util.Objects;
 
 import org.bitbrawl.foodfight.field.Field;
+import org.bitbrawl.foodfight.field.FoodPiece;
 import org.bitbrawl.foodfight.state.FieldState;
 import org.bitbrawl.foodfight.state.FoodState;
 import org.bitbrawl.foodfight.state.PlayerState;
@@ -30,40 +31,41 @@ public final class PlayerUtils {
 		double x = location.getX(), y = location.getY();
 		Direction heading = player.getHeading();
 		Inventory inventory = player.getInventory();
+		double halfPi = 0.5 * Math.PI;
 
 		switch (action) {
 		case MOVE_FORWARD:
-			if (x <= 0 && heading.angle(Direction.WEST) <= 90.0)
+			if (x <= 0 && heading.angle(Direction.WEST) < halfPi)
 				return false;
-			if (x >= Field.WIDTH && heading.angle(Direction.EAST) <= 90.0)
+			if (x >= Field.WIDTH && heading.angle(Direction.EAST) < halfPi)
 				return false;
-			if (y <= 0 && heading.angle(Direction.NORTH) <= 90.0)
+			if (y <= 0 && heading.angle(Direction.NORTH) < halfPi)
 				return false;
-			if (y >= Field.DEPTH && heading.angle(Direction.SOUTH) <= 90.0)
+			if (y >= Field.DEPTH && heading.angle(Direction.SOUTH) < halfPi)
 				return false;
 			return true;
 		case MOVE_BACKWARD:
-			if (x <= 0 && heading.angle(Direction.EAST) <= 90.0)
+			if (x <= 0 && heading.angle(Direction.EAST) < halfPi)
 				return false;
-			if (x >= Field.WIDTH && heading.angle(Direction.WEST) <= 90.0)
+			if (x >= Field.WIDTH && heading.angle(Direction.WEST) <= halfPi)
 				return false;
-			if (y <= 0 && heading.angle(Direction.SOUTH) <= 90.0)
+			if (y <= 0 && heading.angle(Direction.SOUTH) <= halfPi)
 				return false;
-			if (y >= Field.DEPTH && heading.angle(Direction.NORTH) <= 90.0)
+			if (y >= Field.DEPTH && heading.angle(Direction.NORTH) <= halfPi)
 				return false;
 			return true;
 		case PICKUP_LEFT:
 			if (inventory.get(Hand.LEFT) != null)
 				return false;
-			for (FoodState food : field.getFood())
-				if (canPickup(player, food, Hand.LEFT))
+			for (FoodPiece food : field.getFood())
+				if (canPickup(player, food.getState(), Hand.LEFT))
 					return true;
 			return false;
 		case PICKUP_RIGHT:
 			if (inventory.get(Hand.RIGHT) != null)
 				return false;
-			for (FoodState food : field.getFood())
-				if (canPickup(player, food, Hand.RIGHT))
+			for (FoodPiece food : field.getFood())
+				if (canPickup(player, food.getState(), Hand.RIGHT))
 					return true;
 			return false;
 		case THROW_LEFT:
@@ -99,7 +101,7 @@ public final class PlayerUtils {
 		if (distanceSquared > Player.REACH_DISTANCE * Player.REACH_DISTANCE)
 			return false;
 
-		Direction toFood = new Direction(Vector.cartesian(deltaX, deltaY));
+		Direction toFood = Vector.cartesian(deltaX, deltaY).getDirection();
 		return getArmDirection(player, hand).angle(toFood) < Player.REACH_RANGE / 2;
 
 	}

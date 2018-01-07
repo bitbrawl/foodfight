@@ -3,6 +3,7 @@ package org.bitbrawl.foodfight.util;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
+import java.util.Objects;
 
 import net.jcip.annotations.Immutable;
 
@@ -12,8 +13,8 @@ public final class Vector implements Serializable {
 	private final double x;
 	private final double y;
 
-	private transient double magnitude;
-	private transient Direction direction;
+	private transient volatile double magnitude;
+	private transient volatile Direction direction;
 
 	private Vector(double x, double y, double magnitude, Direction direction) {
 		this.x = x;
@@ -22,27 +23,16 @@ public final class Vector implements Serializable {
 		this.direction = direction;
 	}
 
-	private Vector() {
-		x = -0.0;
-		y = -0.0;
-	}
-
-	void init() {
-		magnitude = Math.hypot(x, y);
-		direction = new Direction(Math.toDegrees(Math.atan2(x, -y)));
-	}
-
 	public static Vector cartesian(double x, double y) {
 		double magnitude = Math.hypot(x, y);
-		Direction direction = new Direction(Math.toDegrees(Math.atan2(x, -y)));
+		Direction direction = new Direction(Math.atan2(y, x));
 		return new Vector(x, y, magnitude, direction);
 	}
 
 	public static Vector polar(double magnitude, Direction direction) {
 		if (magnitude < 0.0)
-			throw new IllegalArgumentException();
-		if (direction == null)
-			throw new NullPointerException();
+			throw new IllegalArgumentException("magnitude cannot be negative");
+		Objects.requireNonNull(direction, "direction cannot be null");
 
 		double x = magnitude * Math.sin(Math.toRadians(direction.get()));
 		double y = -magnitude * Math.cos(Math.toRadians(direction.get()));
@@ -123,7 +113,7 @@ public final class Vector implements Serializable {
 		s.defaultReadObject();
 
 		magnitude = Math.hypot(x, y);
-		direction = new Direction(Math.toDegrees(Math.atan2(x, -y)));
+		direction = new Direction(Math.atan2(y, x));
 
 	}
 
