@@ -88,6 +88,6 @@ public final class Direction implements Serializable {
 
 	private static final double DEGREES_PER_ROTATION = 360.0;
 
-	private static final long serialVersionUID = 7444944054530336843L;
+	private static final long serialVersionUID = 1L;
 
 }

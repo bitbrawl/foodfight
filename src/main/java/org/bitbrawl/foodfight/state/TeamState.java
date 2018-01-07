@@ -59,6 +59,6 @@ public final class TeamState implements Team, Serializable {
 
 	}
 
-	private static final long serialVersionUID = 8653031499240404867L;
+	private static final long serialVersionUID = 1L;
 
 }

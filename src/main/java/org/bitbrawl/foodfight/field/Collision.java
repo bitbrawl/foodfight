@@ -38,6 +38,6 @@ public class Collision implements Serializable {
 
 	public static final RandomScalar KNOCKBACK = new RandomScalar(20.0, 5.0);
 
-	private static final long serialVersionUID = 2989125119932630791L;
+	private static final long serialVersionUID = 1L;
 
 }

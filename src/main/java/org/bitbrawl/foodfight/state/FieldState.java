@@ -72,6 +72,6 @@ public final class FieldState implements Field, Serializable {
 
 	}
 
-	private static final long serialVersionUID = 4660387823717821917L;
+	private static final long serialVersionUID = 1L;
 
 }

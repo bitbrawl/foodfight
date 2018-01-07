@@ -79,6 +79,6 @@ public final class PlayerState implements Player, Serializable {
 		return this;
 	}
 
-	private static final long serialVersionUID = -3493885953265425419L;
+	private static final long serialVersionUID = 1L;
 
 }

@@ -127,6 +127,6 @@ public final class Vector implements Serializable {
 
 	}
 
-	private static final long serialVersionUID = 9088292157961730829L;
+	private static final long serialVersionUID = 1L;
 
 }

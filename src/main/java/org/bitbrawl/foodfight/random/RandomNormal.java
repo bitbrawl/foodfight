@@ -26,7 +26,7 @@ public final class RandomNormal implements DoubleSupplier {
 
 	@Override
 	public double getAsDouble() {
-		return mu + ThreadLocalRandom.current().nextDouble();
+		return mu + ThreadLocalRandom.current().nextGaussian() * sigma;
 	}
 
 }

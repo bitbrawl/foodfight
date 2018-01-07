@@ -36,6 +36,6 @@ public final class FoodState implements FoodPiece, Serializable {
 		return type;
 	}
 
-	private static final long serialVersionUID = 4916239267429508778L;
+	private static final long serialVersionUID = 1L;
 
 }

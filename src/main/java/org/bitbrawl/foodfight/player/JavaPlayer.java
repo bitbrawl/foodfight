@@ -23,9 +23,12 @@ public abstract class JavaPlayer extends DynamicPlayer {
 	private final Lock turnLock = new ReentrantLock();
 
 	protected JavaPlayer() {
-		super(playerCopy);
-		logger = staticLogger;
-		field = staticField;
+		super(playerCopy.get());
+		assert playerCopy.get() != null;
+		logger = loggerCopy.get();
+		assert logger != null;
+		field = fieldCopy.get();
+		assert field != null;
 	}
 
 	protected abstract Action playTurn(int turnNumber);
@@ -82,22 +85,25 @@ public abstract class JavaPlayer extends DynamicPlayer {
 
 	static JavaPlayer newPlayer(Player playerCopy, Class<? extends JavaPlayer> clazz, Logger logger, Field field)
 			throws NoSuchMethodException, IllegalAccessException, InstantiationException, InvocationTargetException {
-		if (constructorLock.tryLock())
-			try {
-				JavaPlayer.playerCopy = playerCopy;
-				JavaPlayer.staticLogger = logger;
-				JavaPlayer.staticField = field;
-				return clazz.getConstructor().newInstance();
-			} finally {
-				constructorLock.unlock();
-			}
-		else
-			throw new IllegalStateException("Another JavaPlayer is already being created");
+		assert playerCopy == null;
+		assert logger == null;
+		assert field == null;
+
+		try {
+			JavaPlayer.playerCopy.set(playerCopy);
+			JavaPlayer.loggerCopy.set(logger);
+			JavaPlayer.fieldCopy.set(field);
+			return clazz.getConstructor().newInstance();
+		} finally {
+			JavaPlayer.playerCopy.set(null);
+			JavaPlayer.loggerCopy.set(null);
+			JavaPlayer.fieldCopy.set(null);
+		}
+
 	}
 
-	private static final Lock constructorLock = new ReentrantLock();
-	private static Player playerCopy;
-	private static Logger staticLogger;
-	private static Field staticField;
+	private static final ThreadLocal<Player> playerCopy = new ThreadLocal<>();
+	private static final ThreadLocal<Logger> loggerCopy = new ThreadLocal<>();
+	private static final ThreadLocal<Field> fieldCopy = new ThreadLocal<>();
 
 }
