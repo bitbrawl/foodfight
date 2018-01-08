@@ -47,7 +47,7 @@ public final class Direction implements Serializable {
 
 	@Override
 	public String toString() {
-		return Math.round(direction) + "\u00b0";
+		return String.format("%.2drad", direction);
 	}
 
 	@Override

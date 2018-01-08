@@ -29,4 +29,8 @@ public final class RandomScalar implements DoubleSupplier {
 		return mu * Math.exp(ThreadLocalRandom.current().nextGaussian() * sigma / mu);
 	}
 
+	@Override
+	public String toString() {
+		return "RandomScalar[mu=" + mu + ",sigma=" + sigma + ']';
+	}
 }
