@@ -34,7 +34,6 @@ public class Inventory {
 	@Override
 	public String toString() {
 		return "Inventory[left=" + left + ",right=" + right + "]";
-		// return "(" + leftHand + ", " + rightHand + ")";
 	}
 
 	@Override

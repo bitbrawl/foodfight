@@ -64,6 +64,11 @@ public final class TeamState implements Team, Serializable {
 		return result * 31 + score.hashCode();
 	}
 
+	@Override
+	public String toString() {
+		return "TeamState[symbol=" + symbol + ",players=" + players + ",score=" + score;
+	}
+
 	private void readObject(ObjectInputStream s) throws ClassNotFoundException, IOException {
 		s.defaultReadObject();
 
