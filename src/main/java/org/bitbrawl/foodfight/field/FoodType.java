@@ -1,5 +1,7 @@
 package org.bitbrawl.foodfight.field;
 
+import java.util.concurrent.ThreadLocalRandom;
+
 import net.jcip.annotations.Immutable;
 
 @Immutable
@@ -15,6 +17,11 @@ public enum FoodType {
 		this.name = name;
 		this.radius = radius;
 		this.health = health;
+	}
+
+	public static FoodType random() {
+		FoodType[] values = values();
+		return values[ThreadLocalRandom.current().nextInt(values.length)];
 	}
 
 	@Override

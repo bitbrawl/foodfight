@@ -4,17 +4,16 @@ import java.io.Serializable;
 import java.util.concurrent.TimeUnit;
 
 import org.bitbrawl.foodfight.player.Inventory;
-import org.bitbrawl.foodfight.player.Player;
 import org.bitbrawl.foodfight.util.Direction;
 import org.bitbrawl.foodfight.util.Vector;
 
 import net.jcip.annotations.Immutable;
 
 @Immutable
-public final class PlayerState implements Player, Serializable {
+public final class PlayerState implements Serializable {
 
 	private final char symbol;
-	private final TeamState team;
+	private final float color;
 	private final Vector location;
 	private final double height;
 	private final Direction heading;
@@ -22,10 +21,10 @@ public final class PlayerState implements Player, Serializable {
 	private final double health;
 	private final long timeLeft;
 
-	public PlayerState(char symbol, TeamState team, Vector location, double height, Direction heading,
-			Inventory inventory, double health, long timeLeft, TimeUnit unit) {
+	public PlayerState(char symbol, float color, Vector location, double height, Direction heading, Inventory inventory,
+			double health, long timeLeft, TimeUnit unit) {
 		this.symbol = symbol;
-		this.team = team;
+		this.color = color;
 		this.location = location;
 		this.height = height;
 		this.heading = heading;
@@ -34,49 +33,36 @@ public final class PlayerState implements Player, Serializable {
 		this.timeLeft = unit.toNanos(timeLeft);
 	}
 
-	@Override
-	public Vector getLocation() {
-		return location;
-	}
-
-	@Override
 	public char getSymbol() {
 		return symbol;
 	}
 
-	@Override
-	public TeamState getTeam() {
-		return team;
+	public float getColor() {
+		return color;
 	}
 
-	@Override
+	public Vector getLocation() {
+		return location;
+	}
+
 	public double getHeight() {
 		return height;
 	}
 
-	@Override
 	public Direction getHeading() {
 		return heading;
 	}
 
-	@Override
 	public Inventory getInventory() {
 		return inventory;
 	}
 
-	@Override
 	public double getHealth() {
 		return health;
 	}
 
-	@Override
 	public long getTimeLeft(TimeUnit unit) {
 		return unit.convert(timeLeft, TimeUnit.NANOSECONDS);
-	}
-
-	@Override
-	public PlayerState getState() {
-		return this;
 	}
 
 	@Override
@@ -86,15 +72,13 @@ public final class PlayerState implements Player, Serializable {
 		if (!(o instanceof PlayerState))
 			return false;
 		PlayerState state = (PlayerState) o;
-		return symbol == state.symbol && team.equals(state.team) && height == state.height
-				&& heading.equals(state.heading) && inventory.equals(state.inventory) && health == state.health
-				&& timeLeft == state.timeLeft;
+		return symbol == state.symbol && height == state.height && heading.equals(state.heading)
+				&& inventory.equals(state.inventory) && health == state.health && timeLeft == state.timeLeft;
 	}
 
 	@Override
 	public int hashCode() {
 		int result = Character.hashCode(symbol);
-		result = result * 31 + team.hashCode();
 		result = result * 31 + Double.hashCode(height);
 		result = result * 31 + heading.hashCode();
 		result = result * 31 + inventory.hashCode();
@@ -104,8 +88,7 @@ public final class PlayerState implements Player, Serializable {
 
 	@Override
 	public String toString() {
-		StringBuilder result = new StringBuilder("PlayerState[id=");
-		result.append(team.getSymbol());
+		StringBuilder result = new StringBuilder("PlayerState[symbol=");
 		result.append(symbol);
 		result.append(",location=");
 		result.append(location);

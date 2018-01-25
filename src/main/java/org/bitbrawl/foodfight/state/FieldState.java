@@ -3,68 +3,88 @@ package org.bitbrawl.foodfight.state;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
+import java.util.AbstractSet;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
 import org.bitbrawl.foodfight.field.Collision;
-import org.bitbrawl.foodfight.field.Field;
-import org.bitbrawl.foodfight.field.FoodPiece;
-import org.bitbrawl.foodfight.player.Player;
-import org.bitbrawl.foodfight.team.Team;
 
 import net.jcip.annotations.Immutable;
 
 @Immutable
-public final class FieldState implements Field, Serializable {
+public final class FieldState implements Serializable {
 
 	private final int turnNumber;
-	private Set<Team> teams;
-	private transient Set<Player> players;
-	private Set<FoodPiece> foods;
+	private Set<TeamState> teams;
+	private Set<FoodState> food;
 	private Set<Collision> collisions;
 
-	public FieldState(int turnNumber, Collection<? extends TeamState> teams, Collection<? extends FoodState> foods,
+	public FieldState(int turnNumber, Collection<? extends TeamState> teams, Collection<? extends FoodState> food,
 			Collection<? extends Collision> collisions) {
 		this.turnNumber = turnNumber;
 		this.teams = Collections.unmodifiableSet(new LinkedHashSet<>(teams));
-		Set<Player> tempPlayers = new LinkedHashSet<>();
-		for (TeamState team : teams)
-			tempPlayers.addAll(team.getPlayers());
-		this.players = Collections.unmodifiableSet(tempPlayers);
-		this.foods = Collections.unmodifiableSet(new LinkedHashSet<>(foods));
+		this.food = Collections.unmodifiableSet(new LinkedHashSet<>(food));
 		this.collisions = Collections.unmodifiableSet(new LinkedHashSet<>(collisions));
 	}
 
-	@Override
 	public int getTurnNumber() {
 		return turnNumber;
 	}
 
-	@Override
-	public Set<Team> getTeams() {
+	public Set<TeamState> getTeams() {
 		return teams;
 	}
 
-	@Override
-	public Set<Player> getPlayers() {
-		return players;
+	public Set<PlayerState> getPlayers() {
+
+		return new AbstractSet<PlayerState>() {
+
+			@Override
+			public Iterator<PlayerState> iterator() {
+				return new Iterator<PlayerState>() {
+
+					private final Iterator<TeamState> teamIt = getTeams().iterator();
+					private Iterator<PlayerState> playerIt = teamIt.next().getPlayers().iterator();
+
+					@Override
+					public boolean hasNext() {
+						if (playerIt.hasNext())
+							return true;
+						if (!teamIt.hasNext())
+							return false;
+						playerIt = teamIt.next().getPlayers().iterator();
+						return playerIt.hasNext();
+					}
+
+					@Override
+					public PlayerState next() {
+						if (playerIt.hasNext())
+							return playerIt.next();
+						playerIt = teamIt.next().getPlayers().iterator();
+						return playerIt.next();
+					}
+
+				};
+			}
+
+			@Override
+			public int size() {
+				return getTeams().stream().mapToInt(team -> team.getPlayers().size()).sum();
+			}
+
+		};
+
 	}
 
-	@Override
-	public Set<FoodPiece> getFood() {
-		return foods;
+	public Set<FoodState> getFood() {
+		return food;
 	}
 
-	@Override
 	public Set<Collision> getCollisions() {
 		return collisions;
-	}
-
-	@Override
-	public FieldState getState() {
-		return this;
 	}
 
 	@Override
@@ -74,7 +94,7 @@ public final class FieldState implements Field, Serializable {
 		result.append(",teams=");
 		result.append(teams);
 		result.append(",food=");
-		result.append(foods);
+		result.append(food);
 		result.append(",collisions=");
 		result.append(collisions);
 		result.append(']');
@@ -85,11 +105,7 @@ public final class FieldState implements Field, Serializable {
 		s.defaultReadObject();
 
 		teams = Collections.unmodifiableSet(new LinkedHashSet<>(teams));
-		Set<Player> tempPlayers = new LinkedHashSet<>();
-		for (Team team : teams)
-			tempPlayers.addAll(team.getPlayers());
-		players = Collections.unmodifiableSet(tempPlayers);
-		foods = Collections.unmodifiableSet(new LinkedHashSet<>(foods));
+		food = Collections.unmodifiableSet(new LinkedHashSet<>(food));
 		collisions = Collections.unmodifiableSet(new LinkedHashSet<>(collisions));
 
 	}

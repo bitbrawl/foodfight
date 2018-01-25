@@ -8,43 +8,46 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import org.bitbrawl.foodfight.player.Player;
 import org.bitbrawl.foodfight.team.Score;
-import org.bitbrawl.foodfight.team.Team;
 
 import net.jcip.annotations.Immutable;
 
 @Immutable
-public final class TeamState implements Team, Serializable {
+public final class TeamState implements Serializable {
 
 	private final char symbol;
-	private Set<Player> players;
+	private final float color;
+	private Set<PlayerState> players;
+	private final TableState table;
 	private final Score score;
 
-	public TeamState(char symbol, Collection<? extends PlayerState> players, Score score) {
+	public TeamState(char symbol, float color, Collection<? extends PlayerState> players, TableState table,
+			Score score) {
 		this.symbol = symbol;
+		this.color = color;
 		this.players = Collections.unmodifiableSet(new LinkedHashSet<>(players));
+		this.table = table;
 		this.score = score;
 	}
 
-	@Override
 	public char getSymbol() {
 		return symbol;
 	}
 
-	@Override
-	public Set<Player> getPlayers() {
+	public float getColor() {
+		return color;
+	}
+
+	public Set<PlayerState> getPlayers() {
 		return players;
 	}
 
-	@Override
-	public Score getScore() {
-		return score;
+	public TableState getTable() {
+		return table;
 	}
 
-	@Override
-	public TeamState getState() {
-		return this;
+	public Score getScore() {
+		return score;
 	}
 
 	@Override

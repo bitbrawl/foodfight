@@ -3,6 +3,7 @@ package org.bitbrawl.foodfight.field;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -18,7 +19,7 @@ public class Collision implements Serializable {
 	private final Vector location;
 	private Set<FieldElement> objects;
 
-	public Collision(Vector location, Set<? extends FieldElement> objects) {
+	public Collision(Vector location, Collection<? extends FieldElement> objects) {
 		this.location = location;
 		this.objects = Collections.unmodifiableSet(new LinkedHashSet<>(objects));
 	}

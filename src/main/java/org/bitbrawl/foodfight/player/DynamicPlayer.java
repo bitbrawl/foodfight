@@ -15,6 +15,7 @@ import net.jcip.annotations.ThreadSafe;
 public class DynamicPlayer implements Player {
 
 	private final char symbol;
+	private final float color;
 	private final Team team;
 	private volatile Vector location;
 	private volatile double height;
@@ -25,32 +26,26 @@ public class DynamicPlayer implements Player {
 
 	private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
-	DynamicPlayer(char symbol, Team team, Vector location, double height, Direction heading, Inventory inventory,
-			double health, long timeLeft) {
-		this.symbol = symbol;
+	protected DynamicPlayer(Team team, PlayerState state) {
 		this.team = team;
-		this.location = location;
-		this.height = height;
-		this.heading = heading;
-		this.inventory = inventory;
-		this.health = health;
-		this.timeLeft = timeLeft;
-	}
-
-	DynamicPlayer(Player input) {
-		symbol = input.getSymbol();
-		team = input.getTeam();
-		location = input.getLocation();
-		height = input.getHeight();
-		heading = input.getHeading();
-		inventory = input.getInventory();
-		health = input.getHealth();
-		timeLeft = input.getTimeLeft(TimeUnit.NANOSECONDS);
+		symbol = state.getSymbol();
+		color = state.getColor();
+		location = state.getLocation();
+		height = state.getHeight();
+		heading = state.getHeading();
+		inventory = state.getInventory();
+		health = state.getHealth();
+		timeLeft = state.getTimeLeft(TimeUnit.NANOSECONDS);
 	}
 
 	@Override
 	public final char getSymbol() {
 		return symbol;
+	}
+
+	@Override
+	public final float getColor() {
+		return color;
 	}
 
 	@Override
@@ -149,14 +144,14 @@ public class DynamicPlayer implements Player {
 	public PlayerState getState() {
 		lock.readLock().lock();
 		try {
-			return new PlayerState(symbol, team.getState(), location, height, heading, inventory, health, timeLeft,
-					TimeUnit.NANOSECONDS);
+			return new PlayerState(symbol, color, location, height, heading, inventory, health,
+					getTimeLeft(TimeUnit.NANOSECONDS), TimeUnit.NANOSECONDS);
 		} finally {
 			lock.readLock().unlock();
 		}
 	}
 
-	void update(Player state) {
+	void update(PlayerState state) {
 		lock.writeLock().lock();
 		try {
 			location = state.getLocation();

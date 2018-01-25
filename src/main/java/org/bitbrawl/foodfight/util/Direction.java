@@ -10,12 +10,12 @@ public final class Direction implements Serializable {
 
 	private final double direction;
 
-	public Direction() {
-		this(ThreadLocalRandom.current().nextDouble() * TWO_PI);
-	}
-
 	public Direction(double direction) {
 		this.direction = fixAngle(direction);
+	}
+
+	public static Direction random() {
+		return new Direction(ThreadLocalRandom.current().nextDouble() * TWO_PI);
 	}
 
 	public double get() {

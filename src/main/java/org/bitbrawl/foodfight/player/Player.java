@@ -8,9 +8,11 @@ import org.bitbrawl.foodfight.team.Team;
 import org.bitbrawl.foodfight.util.Direction;
 import org.bitbrawl.foodfight.util.RandomScalar;
 
-public interface Player extends FieldElement, Comparable<Player> {
+public interface Player extends FieldElement {
 
 	public char getSymbol();
+
+	public float getColor();
 
 	public Team getTeam();
 
@@ -26,15 +28,6 @@ public interface Player extends FieldElement, Comparable<Player> {
 	public long getTimeLeft(TimeUnit unit);
 
 	public PlayerState getState();
-
-	@Override
-	public default int compareTo(Player o) {
-		int teamCompare = getTeam().compareTo(o.getTeam());
-		if (teamCompare == 0)
-			return Character.compare(getSymbol(), o.getSymbol());
-		else
-			return teamCompare;
-	}
 
 	public static final double HEIGHT = 200.0;
 	public static final double MIN_HEIGHT = 100.0;

@@ -2,43 +2,41 @@ package org.bitbrawl.foodfight.state;
 
 import java.io.Serializable;
 
-import org.bitbrawl.foodfight.field.FoodPiece;
 import org.bitbrawl.foodfight.field.FoodType;
+import org.bitbrawl.foodfight.util.Direction;
 import org.bitbrawl.foodfight.util.Vector;
 
 import net.jcip.annotations.Immutable;
 
 @Immutable
-public final class FoodState implements FoodPiece, Serializable {
+public final class FoodState implements Serializable {
 
+	private final FoodType type;
 	private final Vector location;
 	private final double height;
-	private final FoodType type;
+	private final Direction heading;
 
-	public FoodState(Vector location, double height, FoodType type) {
+	public FoodState(FoodType type, Vector location, double height, Direction heading) {
 		this.location = location;
 		this.height = height;
 		this.type = type;
+		this.heading = heading;
 	}
 
-	@Override
-	public Vector getLocation() {
-		return location;
-	}
-
-	@Override
-	public double getHeight() {
-		return height;
-	}
-
-	@Override
 	public FoodType getType() {
 		return type;
 	}
 
-	@Override
-	public FoodState getState() {
-		return this;
+	public Vector getLocation() {
+		return location;
+	}
+
+	public double getHeight() {
+		return height;
+	}
+
+	public Direction getHeading() {
+		return heading;
 	}
 
 	@Override
@@ -48,19 +46,21 @@ public final class FoodState implements FoodPiece, Serializable {
 		if (!(o instanceof FoodState))
 			return false;
 		FoodState food = (FoodState) o;
-		return location.equals(food.location) && height == food.height && type.equals(food.type);
+		return location.equals(food.location) && height == food.height && type.equals(food.type)
+				&& heading.equals(food.heading);
 	}
 
 	@Override
 	public int hashCode() {
 		int result = location.hashCode();
 		result = result * 31 + Double.hashCode(height);
-		return result * 31 + type.hashCode();
+		result = result * 31 + type.hashCode();
+		return result * 31 + heading.hashCode();
 	}
 
 	@Override
 	public String toString() {
-		return "FoodState[location=" + location + ",height=" + height + ",type=" + type + ']';
+		return "FoodState[type=" + type + ",location=" + location + ",height=" + height + ",heading=" + heading + ']';
 	}
 
 	private static final long serialVersionUID = 1L;

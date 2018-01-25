@@ -10,11 +10,13 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Logger;
 
 import org.bitbrawl.foodfight.field.Field;
+import org.bitbrawl.foodfight.state.PlayerState;
+import org.bitbrawl.foodfight.team.Team;
 
 import net.jcip.annotations.ThreadSafe;
 
 @ThreadSafe
-public abstract class JavaPlayer extends DynamicPlayer {
+public abstract class JavaPlayer extends ActivePlayer {
 
 	private final Logger logger;
 	private final Field field;
@@ -23,15 +25,14 @@ public abstract class JavaPlayer extends DynamicPlayer {
 	private final Lock turnLock = new ReentrantLock();
 
 	protected JavaPlayer() {
-		super(playerCopy.get());
+		super(teamCopy.get(), playerCopy.get());
+		assert teamCopy.get() != null;
 		assert playerCopy.get() != null;
 		logger = loggerCopy.get();
 		assert logger != null;
 		field = fieldCopy.get();
 		assert field != null;
 	}
-
-	protected abstract Action playTurn(int turnNumber);
 
 	protected final Logger getLogger() {
 		return logger;
@@ -46,7 +47,7 @@ public abstract class JavaPlayer extends DynamicPlayer {
 		return clock.timeLeft(unit);
 	}
 
-	Action playTurnInternal(int turnNumber) throws InterruptedException, ExecutionException, TimeoutException {
+	Action playTurnInternal() throws InterruptedException, ExecutionException, TimeoutException {
 		if (!turnLock.tryLock())
 			throw new IllegalStateException("Another turn is already in progress");
 		try {
@@ -57,7 +58,7 @@ public abstract class JavaPlayer extends DynamicPlayer {
 				Action result = pool.submit(() -> {
 					assert pool.getActiveThreadCount() == 1;
 					clock.start();
-					Action action = playTurn(turnNumber);
+					Action action = playTurn();
 					if (pool.getActiveThreadCount() == 1)
 						clock.endIfRunning();
 					return action;
@@ -78,7 +79,7 @@ public abstract class JavaPlayer extends DynamicPlayer {
 		}
 	}
 
-	static JavaPlayer newPlayer(Player playerCopy, Class<? extends JavaPlayer> clazz, Logger logger, Field field)
+	static JavaPlayer newPlayer(PlayerState playerCopy, Class<? extends JavaPlayer> clazz, Logger logger, Field field)
 			throws NoSuchMethodException, IllegalAccessException, InstantiationException, InvocationTargetException {
 		assert playerCopy == null;
 		assert logger == null;
@@ -97,7 +98,8 @@ public abstract class JavaPlayer extends DynamicPlayer {
 
 	}
 
-	private static final ThreadLocal<Player> playerCopy = new ThreadLocal<>();
+	private static final ThreadLocal<Team> teamCopy = new ThreadLocal<>();
+	private static final ThreadLocal<PlayerState> playerCopy = new ThreadLocal<>();
 	private static final ThreadLocal<Logger> loggerCopy = new ThreadLocal<>();
 	private static final ThreadLocal<Field> fieldCopy = new ThreadLocal<>();
 

@@ -1,11 +1,14 @@
 package org.bitbrawl.foodfight.field;
 
 import org.bitbrawl.foodfight.state.FoodState;
+import org.bitbrawl.foodfight.util.Direction;
 import org.bitbrawl.foodfight.util.RandomScalar;
 
 public interface FoodPiece extends FieldElement {
 
 	public FoodType getType();
+
+	public Direction getHeading();
 
 	public FoodState getState();
 
