@@ -1,14 +1,13 @@
-package org.bitbrawl.foodfight.player;
+package org.bitbrawl.foodfight.util;
 
 import java.util.Objects;
 
+import org.bitbrawl.foodfight.controller.Controller.Action;
 import org.bitbrawl.foodfight.field.Field;
-import org.bitbrawl.foodfight.field.FoodPiece;
-import org.bitbrawl.foodfight.state.FieldState;
-import org.bitbrawl.foodfight.state.FoodState;
-import org.bitbrawl.foodfight.state.PlayerState;
-import org.bitbrawl.foodfight.util.Direction;
-import org.bitbrawl.foodfight.util.Vector;
+import org.bitbrawl.foodfight.field.Food;
+import org.bitbrawl.foodfight.field.Inventory;
+import org.bitbrawl.foodfight.field.Player;
+import org.bitbrawl.foodfight.field.Player.Hand;
 
 import net.jcip.annotations.Immutable;
 
@@ -19,7 +18,7 @@ public final class PlayerUtils {
 		throw new AssertionError("PlayerUtils is not instantiable");
 	}
 
-	public static boolean isValidAction(FieldState field, PlayerState player, Action action) {
+	public static boolean isValidAction(Field field, Player player, Action action) {
 		Objects.requireNonNull(field, "field cannot be null");
 		Objects.requireNonNull(player, "player cannot be null");
 		if (action == null)
@@ -57,15 +56,15 @@ public final class PlayerUtils {
 		case PICKUP_LEFT:
 			if (inventory.get(Hand.LEFT) != null)
 				return false;
-			for (FoodPiece food : field.getFood())
-				if (canPickup(player, food.getState(), Hand.LEFT))
+			for (Food food : field.getFood())
+				if (canPickup(player, food, Hand.LEFT))
 					return true;
 			return false;
 		case PICKUP_RIGHT:
 			if (inventory.get(Hand.RIGHT) != null)
 				return false;
-			for (FoodPiece food : field.getFood())
-				if (canPickup(player, food.getState(), Hand.RIGHT))
+			for (Food food : field.getFood())
+				if (canPickup(player, food, Hand.RIGHT))
 					return true;
 			return false;
 		case THROW_LEFT:
@@ -84,7 +83,7 @@ public final class PlayerUtils {
 
 	}
 
-	public static boolean canPickup(PlayerState player, FoodState food, Hand hand) {
+	public static boolean canPickup(Player player, Food food, Hand hand) {
 		Objects.requireNonNull(player, "player cannot be null");
 		Objects.requireNonNull(food, "food cannot be null");
 		Objects.requireNonNull(hand, "hand cannot be null");
@@ -106,7 +105,7 @@ public final class PlayerUtils {
 
 	}
 
-	public static final Vector getArmLocation(PlayerState player, Hand hand) {
+	public static final Vector getArmLocation(Player player, Hand hand) {
 		Objects.requireNonNull(player, "player cannot be null");
 		Objects.requireNonNull(hand, "hand cannot be null");
 
@@ -114,7 +113,7 @@ public final class PlayerUtils {
 
 	}
 
-	public static final Direction getArmDirection(PlayerState player, Hand hand) {
+	public static final Direction getArmDirection(Player player, Hand hand) {
 		Objects.requireNonNull(player, "player cannot be null");
 		Objects.requireNonNull(hand, "hand cannot be null");
 
