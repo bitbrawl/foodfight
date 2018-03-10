@@ -1,12 +1,20 @@
 package org.bitbrawl.foodfight.util;
 
-public final class Vector {
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.Serializable;
+import java.util.Objects;
+
+import net.jcip.annotations.Immutable;
+
+@Immutable
+public final class Vector implements Serializable {
 
 	private final double x;
 	private final double y;
 
-	private transient double magnitude;
-	private transient Direction direction;
+	private transient volatile double magnitude;
+	private transient volatile Direction direction;
 
 	private Vector(double x, double y, double magnitude, Direction direction) {
 		this.x = x;
@@ -15,30 +23,19 @@ public final class Vector {
 		this.direction = direction;
 	}
 
-	private Vector() {
-		x = -0.0;
-		y = -0.0;
-	}
-
-	void init() {
-		magnitude = Math.hypot(x, y);
-		direction = new Direction(Math.toDegrees(Math.atan2(x, -y)));
-	}
-
 	public static Vector cartesian(double x, double y) {
-		double speed = Math.hypot(x, y);
-		Direction direction = new Direction(Math.toDegrees(Math.atan2(x, -y)));
-		return new Vector(x, y, speed, direction);
+		double magnitude = Math.hypot(x, y);
+		Direction direction = new Direction(Math.atan2(y, x));
+		return new Vector(x, y, magnitude, direction);
 	}
 
 	public static Vector polar(double magnitude, Direction direction) {
 		if (magnitude < 0.0)
-			throw new IllegalArgumentException();
-		if (direction == null)
-			throw new NullPointerException();
+			throw new IllegalArgumentException("magnitude cannot be negative");
+		Objects.requireNonNull(direction, "direction cannot be null");
 
-		double x = magnitude * Math.sin(Math.toRadians(direction.get()));
-		double y = -magnitude * Math.cos(Math.toRadians(direction.get()));
+		double x = magnitude * Math.cos(direction.get());
+		double y = magnitude * Math.sin(direction.get());
 		return new Vector(x, y, magnitude, direction);
 	}
 
@@ -107,16 +104,19 @@ public final class Vector {
 
 	@Override
 	public int hashCode() {
-
-		int result = 17;
-
-		result = 31 * result + Double.hashCode(x);
-		result = 31 * result + Double.hashCode(y);
-
-		return result;
-
+		return Double.hashCode(x) * 31 + Double.hashCode(y);
 	}
 
 	public static final Vector ZERO = new Vector(0.0, 0.0, 0.0, new Direction(0.0));
+
+	private void readObject(ObjectInputStream s) throws ClassNotFoundException, IOException {
+		s.defaultReadObject();
+
+		magnitude = Math.hypot(x, y);
+		direction = new Direction(Math.atan2(y, x));
+
+	}
+
+	private static final long serialVersionUID = 1L;
 
 }

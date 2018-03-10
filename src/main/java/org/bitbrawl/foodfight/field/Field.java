@@ -1,25 +1,32 @@
 package org.bitbrawl.foodfight.field;
 
-import java.util.Collection;
-
-import org.bitbrawl.foodfight.player.Player;
-import org.bitbrawl.foodfight.team.Team;
+import java.util.Set;
 
 public interface Field {
 
 	public int getTurnNumber();
 
-	public Collection<Team> getTeams();
+	public Set<Team> getTeams();
 
-	public Collection<Player> getPlayers();
+	public Team getTeam(char symbol);
 
-	public Collection<FoodPiece> getFood();
+	public Team getTeam(Player player);
 
-	public Collection<Collision> getCollisions();
+	public Set<Player> getPlayers();
 
-	public static final int DEPTH = 1080;
-	public static final int WIDTH = 1440;
+	public Player getPlayer(char symbol);
+
+	public Set<Food> getFood();
+
+	public Food getFood(Food.Type type);
+
+	public Set<Collision> getCollisions();
+
+	public static final double DEPTH = 1080.0;
+	public static final double WIDTH = 1440.0;
 	public static final int MAX_FOOD = 4;
-	public static final int TOTAL_TURNS = 1000;
+	public static final int TOTAL_TURNS = 2000;
+	// seconds
+	public static final long TIME_LIMIT = 60L;
 
 }
