@@ -34,8 +34,8 @@ public final class Vector implements Serializable {
 			throw new IllegalArgumentException("magnitude cannot be negative");
 		Objects.requireNonNull(direction, "direction cannot be null");
 
-		double x = magnitude * Math.sin(Math.toRadians(direction.get()));
-		double y = -magnitude * Math.cos(Math.toRadians(direction.get()));
+		double x = magnitude * Math.cos(direction.get());
+		double y = magnitude * Math.sin(direction.get());
 		return new Vector(x, y, magnitude, direction);
 	}
 

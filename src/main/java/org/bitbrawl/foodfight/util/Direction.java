@@ -38,16 +38,16 @@ public final class Direction implements Serializable {
 	}
 
 	public Direction flipX() {
-		return new Direction(TWO_PI - direction);
+		return new Direction(Math.PI - direction);
 	}
 
 	public Direction flipY() {
-		return new Direction(Math.PI - direction);
+		return new Direction(TWO_PI - direction);
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%.2drad", direction);
+		return String.format("%.2frad", direction);
 	}
 
 	@Override
@@ -64,8 +64,8 @@ public final class Direction implements Serializable {
 
 	public static final Direction EAST = new Direction(0.0);
 	public static final Direction NORTH = new Direction(0.5 * Math.PI);
-	public static final Direction SOUTH = new Direction(Math.PI);
-	public static final Direction WEST = new Direction(1.5 * Math.PI);
+	public static final Direction WEST = new Direction(Math.PI);
+	public static final Direction SOUTH = new Direction(1.5 * Math.PI);
 
 	private static double fixAngle(double angle) {
 		double remainder = Math.IEEEremainder(angle, TWO_PI);

@@ -1,54 +1,14 @@
 package org.bitbrawl.foodfight.controller;
 
-import java.lang.reflect.InvocationTargetException;
-import java.util.logging.Logger;
-
 import org.bitbrawl.foodfight.field.Field;
 import org.bitbrawl.foodfight.field.Player;
 import org.bitbrawl.foodfight.field.Team;
 
 import net.jcip.annotations.Immutable;
 
-public abstract class Controller {
+public interface Controller {
 
-	private final Logger logger;
-	private final Clock clock;
-
-	public Controller() {
-		logger = loggerCopy.get();
-		clock = clockCopy.get();
-	}
-
-	public abstract Action playTurn(Field field, Team team, Player player);
-
-	public Logger getLogger() {
-		return logger;
-	}
-
-	public Clock getClock() {
-		return clock;
-	}
-
-	static Controller newInstance(Class<? extends Controller> clazz, Logger logger, Clock clock)
-			throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException,
-			NoSuchMethodException, SecurityException {
-		assert clazz != null;
-		assert loggerCopy == null;
-		assert clockCopy == null;
-
-		try {
-			loggerCopy.set(logger);
-			clockCopy.set(clock);
-			return clazz.getConstructor().newInstance();
-		} finally {
-			loggerCopy.set(null);
-			clockCopy.set(null);
-		}
-
-	}
-
-	private static final ThreadLocal<Logger> loggerCopy = new ThreadLocal<>();
-	private static final ThreadLocal<Clock> clockCopy = new ThreadLocal<>();
+	public Action playAction(Field field, Team team, Player player);
 
 	@Immutable
 	public enum Action {

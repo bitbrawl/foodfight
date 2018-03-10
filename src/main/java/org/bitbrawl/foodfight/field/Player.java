@@ -21,13 +21,14 @@ public interface Player extends Locatable {
 	public static final RandomScalar FORWARD_MOVEMENT_SPEED = new RandomScalar(10.0, 1.0);
 	public static final RandomScalar REVERSE_MOVEMENT_SPEED = new RandomScalar(5.0, 1.0);
 	public static final RandomScalar DUCK_SPEED = new RandomScalar(5.0, 1.0);
-	public static final RandomScalar TURN_SPEED = new RandomScalar(5.0, 1.0);
+	public static final RandomScalar TURN_SPEED = new RandomScalar(0.05, 0.01);
 	public static final double REACH_DISTANCE = 100.0;
 	public static final double REACH_RANGE = 60.0;
-	public static final double LEFT_ARM_DIRECTION = -30.0;
-	public static final double RIGHT_ARM_DIRECTION = 30.0;
+	public static final double LEFT_ARM_DIRECTION = -Math.PI / 6.0;
+	public static final double RIGHT_ARM_DIRECTION = Math.PI / 6.0;
 	public static final double COLLISION_RADIUS = 50.0;
 	public static final double MAX_HEALTH = 100.0;
+	public static final RandomScalar COLLISION_DAMAGE = new RandomScalar(2.0, 1.0);
 
 	public enum Hand {
 

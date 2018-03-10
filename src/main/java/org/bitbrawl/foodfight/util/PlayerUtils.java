@@ -8,6 +8,8 @@ import org.bitbrawl.foodfight.field.Food;
 import org.bitbrawl.foodfight.field.Inventory;
 import org.bitbrawl.foodfight.field.Player;
 import org.bitbrawl.foodfight.field.Player.Hand;
+import org.bitbrawl.foodfight.field.Table;
+import org.bitbrawl.foodfight.field.Team;
 
 import net.jcip.annotations.Immutable;
 
@@ -34,23 +36,27 @@ public final class PlayerUtils {
 
 		switch (action) {
 		case MOVE_FORWARD:
-			if (x <= 0 && heading.angle(Direction.WEST) < halfPi)
+			if (x <= Player.COLLISION_RADIUS && heading.angle(Direction.WEST) < halfPi)
 				return false;
-			if (x >= Field.WIDTH && heading.angle(Direction.EAST) < halfPi)
+			if (x >= Field.WIDTH - Player.COLLISION_RADIUS && heading.angle(Direction.EAST) < halfPi)
 				return false;
-			if (y <= 0 && heading.angle(Direction.NORTH) < halfPi)
+			if (y <= Player.COLLISION_RADIUS && heading.angle(Direction.SOUTH) < halfPi)
 				return false;
-			if (y >= Field.DEPTH && heading.angle(Direction.SOUTH) < halfPi)
+			if (y >= Field.DEPTH - Player.COLLISION_RADIUS && heading.angle(Direction.NORTH) < halfPi)
+				return false;
+			if (isAgainstTable(field, player, true))
 				return false;
 			return true;
 		case MOVE_BACKWARD:
-			if (x <= 0 && heading.angle(Direction.EAST) < halfPi)
+			if (x <= Player.COLLISION_RADIUS && heading.angle(Direction.EAST) < halfPi)
 				return false;
-			if (x >= Field.WIDTH && heading.angle(Direction.WEST) <= halfPi)
+			if (x >= Field.WIDTH - Player.COLLISION_RADIUS && heading.angle(Direction.WEST) < halfPi)
 				return false;
-			if (y <= 0 && heading.angle(Direction.SOUTH) <= halfPi)
+			if (y <= Player.COLLISION_RADIUS && heading.angle(Direction.SOUTH) < halfPi)
 				return false;
-			if (y >= Field.DEPTH && heading.angle(Direction.NORTH) <= halfPi)
+			if (y >= Field.DEPTH - Player.COLLISION_RADIUS && heading.angle(Direction.NORTH) < halfPi)
+				return false;
+			if (isAgainstTable(field, player, false))
 				return false;
 			return true;
 		case PICKUP_LEFT:
@@ -125,6 +131,64 @@ public final class PlayerUtils {
 		default:
 			throw new AssertionError();
 		}
+
+	}
+
+	private static boolean isAgainstTable(Field field, Player player, boolean movingForward) {
+
+		Vector location = player.getLocation();
+		double playerX = location.getX();
+		double playerY = location.getY();
+		Direction heading = player.getHeading();
+		double halfPi = Math.PI / 2.0;
+
+		boolean movingNorth, movingSouth, movingEast, movingWest;
+		if (movingForward) {
+			movingNorth = heading.angle(Direction.NORTH) < halfPi;
+			movingSouth = heading.angle(Direction.SOUTH) < halfPi;
+			movingEast = heading.angle(Direction.EAST) < halfPi;
+			movingWest = heading.angle(Direction.WEST) < halfPi;
+		} else {
+			movingNorth = heading.angle(Direction.NORTH) > halfPi;
+			movingSouth = heading.angle(Direction.SOUTH) > halfPi;
+			movingEast = heading.angle(Direction.EAST) > halfPi;
+			movingWest = heading.angle(Direction.WEST) > halfPi;
+		}
+
+		for (Team team : field.getTeams()) {
+			Table table = team.getTable();
+
+			Vector tableLocation = table.getLocation();
+			double tableX = tableLocation.getX();
+			double tableY = tableLocation.getY();
+
+			double tableRadiusExtended = Table.RADIUS + Player.COLLISION_RADIUS;
+			double northEdge = tableY + tableRadiusExtended;
+			double southEdge = tableY - tableRadiusExtended;
+			double eastEdge = tableX + tableRadiusExtended;
+			double westEdge = tableX - tableRadiusExtended;
+
+			if (westEdge < playerX && playerX < eastEdge) {
+
+				if (movingNorth && southEdge <= playerY && playerY < tableY)
+					return true;
+				if (movingSouth && tableY < playerY && playerY <= northEdge)
+					return true;
+
+			}
+
+			if (southEdge < playerY && playerY < northEdge) {
+
+				if (movingEast && westEdge <= playerX && playerX < tableX)
+					return true;
+				if (movingWest && tableX < playerX && playerX <= eastEdge)
+					return true;
+
+			}
+
+		}
+
+		return false;
 
 	}
 

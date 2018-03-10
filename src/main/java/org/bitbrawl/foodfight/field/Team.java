@@ -8,6 +8,8 @@ public interface Team {
 
 	public Set<Player> getPlayers();
 
+	public Player getPlayer(char symbol);
+
 	public Table getTable();
 
 	public Score getScore();
