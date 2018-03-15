@@ -41,4 +41,9 @@ public final class DynamicTable implements Table, Dynamic<TableState> {
 		this.state = state;
 	}
 
+	@Override
+	public String toString() {
+		return "DynamicTable[location=" + state.getLocation() + ']';
+	}
+
 }

@@ -37,4 +37,9 @@ public final class TableState implements Table {
 		return food;
 	}
 
+	@Override
+	public String toString() {
+		return "TableState[location=" + location + ",food=" + food + ']';
+	}
+
 }

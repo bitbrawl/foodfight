@@ -48,4 +48,9 @@ public class InventoryState implements Inventory {
 
 	}
 
+	@Override
+	public String toString() {
+		return map.toString();
+	}
+
 }

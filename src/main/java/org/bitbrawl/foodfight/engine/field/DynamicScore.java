@@ -42,4 +42,9 @@ public final class DynamicScore implements Score, Dynamic<ScoreState> {
 		this.state = state;
 	}
 
+	@Override
+	public String toString() {
+		return "DynamicScore[totalPoints=" + state.getTotalPoints() + ']';
+	}
+
 }

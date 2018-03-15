@@ -76,4 +76,9 @@ public final class DynamicTeam implements Team, Dynamic<TeamState> {
 		score.update(state.getScore());
 	}
 
+	@Override
+	public String toString() {
+		return "DynamicTeam[symbol=" + state.getSymbol() + ']';
+	}
+
 }

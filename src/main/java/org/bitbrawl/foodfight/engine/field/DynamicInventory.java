@@ -30,4 +30,9 @@ public final class DynamicInventory implements Inventory, Dynamic<InventoryState
 		this.state = state;
 	}
 
+	@Override
+	public String toString() {
+		return "DynamicInventory[state=" + state + ']';
+	}
+
 }

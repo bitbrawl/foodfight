@@ -62,7 +62,7 @@ public final class DynamicPlayer implements Player, Dynamic<PlayerState> {
 
 	@Override
 	public String toString() {
-		return "Player " + state.getSymbol();
+		return "DynamicPlayer[symbol=" + state.getSymbol() + ']';
 	}
 
 }

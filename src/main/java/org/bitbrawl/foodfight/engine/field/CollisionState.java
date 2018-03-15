@@ -29,4 +29,9 @@ public final class CollisionState implements Collision {
 		return damage;
 	}
 
+	@Override
+	public String toString() {
+		return "CollisionState[location=" + location + ",damage=" + damage + ']';
+	}
+
 }

@@ -50,4 +50,9 @@ public final class DynamicFood implements Food, Dynamic<FoodState> {
 		this.state = state;
 	}
 
+	@Override
+	public String toString() {
+		return "DynamicFood[type=" + state.getType() + ']';
+	}
+
 }

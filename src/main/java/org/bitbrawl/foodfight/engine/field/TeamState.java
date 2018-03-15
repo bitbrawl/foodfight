@@ -66,6 +66,11 @@ public final class TeamState implements Team {
 		return score;
 	}
 
+	@Override
+	public String toString() {
+		return "TeamState[symbol=" + symbol + ",players=" + players + ",table=" + table + ",score=" + score + ']';
+	}
+
 	public enum Deserializer implements JsonDeserializer<TeamState> {
 
 		INSTANCE;
