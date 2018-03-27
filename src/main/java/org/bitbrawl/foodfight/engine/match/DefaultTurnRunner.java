@@ -57,10 +57,8 @@ public final class DefaultTurnRunner implements TurnRunner {
 
 		field = addFoodPoints(field);
 
-		for (PlayerState player : field.getPlayerStates())
-			for (TeamState team : field.getTeamStates())
-				if (isInsideTable(player.getLocation(), team.getTable()))
-					System.out.println(player.getLocation() + " is in " + team.getTable().getLocation());
+		if (field.getTurnNumber() >= Field.TOTAL_TURNS)
+			field = breakTies(field);
 
 		return new FieldState(field.getTurnNumber() + 1, field.getTeamStates(), field.getFoodStates(),
 				field.getCollisionStates());
@@ -344,6 +342,63 @@ public final class DefaultTurnRunner implements TurnRunner {
 
 	}
 
+	private FieldState breakTies(FieldState field) {
+
+		Set<TeamState> teams = field.getTeamStates();
+		List<TeamState> orderedTeams = new ArrayList<>(teams);
+
+		Map<TeamState, Double> distancesToCenter = new HashMap<>();
+		double centerX = Field.WIDTH / 2.0, centerY = Field.DEPTH / 2.0;
+		for (TeamState team : orderedTeams) {
+			double teamDist = 0.0;
+			for (PlayerState player : team.getPlayerStates()) {
+				Vector location = player.getLocation();
+				double dx = location.getX() - centerX;
+				double dy = location.getY() - centerY;
+				teamDist += dx * dx + dy * dy;
+			}
+			distancesToCenter.put(team, teamDist);
+		}
+		Collections.shuffle(orderedTeams, ThreadLocalRandom.current());
+		Collections.sort(orderedTeams, (a, b) -> {
+
+			int pointDifference = Integer.compare(a.getScore().getTotalPoints(), b.getScore().getTotalPoints());
+			if (pointDifference != 0)
+				return pointDifference;
+
+			return -Double.compare(distancesToCenter.get(a), distancesToCenter.get(b));
+
+		});
+
+		Map<TeamState, ScoreState> scoreUpdates = new HashMap<>();
+		for (TeamState team : orderedTeams)
+			scoreUpdates.put(team, team.getScore());
+
+		Iterator<TeamState> it = orderedTeams.iterator();
+		TeamState current = it.next();
+		boolean changed = false;
+		while (it.hasNext()) {
+			TeamState prev = current;
+			current = it.next();
+			while (scoreUpdates.get(current).getTotalPoints() <= scoreUpdates.get(prev).getTotalPoints()) {
+				changed = true;
+				scoreUpdates.compute(current, (k, v) -> v.addEvent(Event.TIE_BREAK));
+			}
+		}
+
+		if (!changed)
+			return field;
+
+		Set<TeamState> newTeams = new LinkedHashSet<>();
+		for (TeamState team : teams) {
+			ScoreState score = scoreUpdates.get(team);
+			newTeams.add(new TeamState(team.getSymbol(), team.getPlayerStates(), team.getTable(), score));
+		}
+
+		return new FieldState(field.getTurnNumber(), newTeams, field.getFoodStates(), field.getCollisionStates());
+
+	}
+
 	private FieldState playAction(FieldState field, TeamState team, PlayerState player, Action action) {
 		assert field != null;
 		assert player != null;
@@ -370,8 +425,6 @@ public final class DefaultTurnRunner implements TurnRunner {
 				inventory = inventory.add(hand, piece.getType());
 
 			} else if (action.isThrowing()) {
-
-				// TODO throw onto table
 
 				score = score.addEvent(Event.FIRST_THROW).addEvent(Event.EVERY_THROW);
 
@@ -509,32 +562,20 @@ public final class DefaultTurnRunner implements TurnRunner {
 				if (result.getY() - Player.COLLISION_RADIUS < northEdgeY)
 					result = hitWallY(location, displacement, northEdgeY);
 
-			if (isInsideTable(result, table))
-				System.out.println(result + " still inside table " + table.getLocation());
-
 			double southEdgeY = table.getEdge(Direction.SOUTH);
 			if (originalY + Player.COLLISION_RADIUS <= southEdgeY)
 				if (result.getY() + Player.COLLISION_RADIUS > southEdgeY)
 					result = hitWallY(location, displacement, southEdgeY);
-
-			if (isInsideTable(result, table))
-				System.out.println(result + " still inside table " + table.getLocation());
 
 			double eastEdgeX = table.getEdge(Direction.EAST);
 			if (originalX - Player.COLLISION_RADIUS >= eastEdgeX)
 				if (result.getX() - Player.COLLISION_RADIUS < eastEdgeX)
 					result = hitWallX(location, displacement, eastEdgeX);
 
-			if (isInsideTable(result, table))
-				System.out.println(result + " still inside table " + table.getLocation());
-
 			double westEdgeX = table.getEdge(Direction.WEST);
 			if (originalX + Player.COLLISION_RADIUS <= westEdgeX)
 				if (result.getX() + Player.COLLISION_RADIUS > westEdgeX)
 					result = hitWallX(location, displacement, westEdgeX);
-
-			if (isInsideTable(result, table))
-				System.out.println(result + " still inside table " + table.getLocation());
 
 		}
 

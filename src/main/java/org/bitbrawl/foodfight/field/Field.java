@@ -1,6 +1,7 @@
 package org.bitbrawl.foodfight.field;
 
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 public interface Field {
 
@@ -27,6 +28,6 @@ public interface Field {
 	public static final int MAX_FOOD = 4;
 	public static final int TOTAL_TURNS = 2000;
 	// seconds
-	public static final long TIME_LIMIT = 60L;
+	public static final long TIME_LIMIT_NANOS = TimeUnit.SECONDS.toNanos(60L);
 
 }

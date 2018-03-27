@@ -124,17 +124,10 @@ public final class Match {
 			case 4:
 				return TEAM;
 			default:
-				throw new IllegalArgumentException();
+				throw new IllegalArgumentException(Integer.toString(numPlayers));
 			}
 		}
 
-		public static Type byName(String name) {
-			for (Type type : values()) {
-				if (type.name.equals(name))
-					return type;
-			}
-			throw new IllegalArgumentException(name);
-		}
 	}
 
 }

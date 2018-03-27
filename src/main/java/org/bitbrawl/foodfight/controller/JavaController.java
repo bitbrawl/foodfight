@@ -1,8 +1,14 @@
 package org.bitbrawl.foodfight.controller;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -11,6 +17,7 @@ import org.bitbrawl.foodfight.engine.match.DefaultTurnRunner;
 import org.bitbrawl.foodfight.engine.match.FieldGenerator;
 import org.bitbrawl.foodfight.engine.match.Match;
 import org.bitbrawl.foodfight.engine.match.MatchHistory;
+import org.bitbrawl.foodfight.engine.runner.ControllerException;
 import org.bitbrawl.foodfight.engine.video.FrameGenerator;
 import org.bitbrawl.foodfight.engine.video.ImageFrame;
 
@@ -39,31 +46,34 @@ public abstract class JavaController implements Controller {
 		return clock;
 	}
 
-	protected static void runDebugMatch(Class<? extends JavaController> clazz) {
+	@SafeVarargs
+	protected static void runDebugMatch(Match.Type matchType, Class<? extends JavaController>... classes) {
+		Objects.requireNonNull(classes, "classes cannot be null");
+		if (classes.length <= 0)
+			throw new IllegalArgumentException("classes cannot be empty");
 
+		// TODO logger class
 		Logger matchLogger = Logger.getAnonymousLogger();
+		FieldState field = new FieldGenerator(matchType).get();
 
-		FieldState field = new FieldGenerator(Match.Type.TEAM).get();
-		Set<Set<Controller>> controllers = new HashSet<>();
-		for (int i = 0; i < 2; i++) {
-			Set<Controller> team = new HashSet<>();
-			for (int j = 0; j < 2; j++) {
+		List<Class<? extends JavaController>> classList = Arrays.asList(classes);
+		List<Class<? extends JavaController>> allClasses = new ArrayList<>(classList);
+		while (allClasses.size() < matchType.getNumberOfPlayers())
+			allClasses.addAll(classList);
+		Collections.shuffle(allClasses, ThreadLocalRandom.current());
+
+		Set<Set<Controller>> controllers = new LinkedHashSet<>();
+		for (int i = 0, n = matchType.getNumberOfTeams(); i < n; i++) {
+			Set<Controller> team = new LinkedHashSet<>();
+			for (int j = 0, m = matchType.getNumberOfPlayers() / matchType.getNumberOfTeams(); j < m; j++) {
 				Logger playerLogger = Logger.getAnonymousLogger();
 				Clock clock = unit -> Long.MAX_VALUE;
 				Controller controller;
+				Class<? extends JavaController> clazz = allClasses.remove(allClasses.size() - 1);
 				try {
 					controller = newInstance(clazz, playerLogger, clock);
-				} catch (NoSuchMethodException e) {
-					matchLogger.log(Level.SEVERE, "A parameterless constructor was not found", e);
-					controller = (f, t, p) -> null;
-				} catch (InstantiationException e) {
-					matchLogger.log(Level.SEVERE, "Your controller class cannot be abstract", e);
-					controller = (f, t, p) -> null;
-				} catch (IllegalAccessException e) {
-					matchLogger.log(Level.SEVERE, "Your constructor must be public", e);
-					controller = (f, t, p) -> null;
-				} catch (InvocationTargetException e) {
-					matchLogger.log(Level.SEVERE, "Your constructor threw an exception", e);
+				} catch (ControllerException e) {
+					matchLogger.log(Level.SEVERE, "Unable to instantiate new Controller", e);
 					controller = (f, t, p) -> null;
 				}
 				team.add(controller);
@@ -80,8 +90,9 @@ public abstract class JavaController implements Controller {
 
 	}
 
-	static JavaController newInstance(Class<? extends JavaController> clazz, Logger logger, Clock clock)
-			throws NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException {
+	// TODO warning note
+	public static JavaController newInstance(Class<? extends JavaController> clazz, Logger logger, Clock clock)
+			throws ControllerException {
 		assert clazz != null;
 		assert logger != null;
 		assert clock != null;
@@ -93,6 +104,17 @@ public abstract class JavaController implements Controller {
 			try {
 				clockCopy.set(clock);
 				return clazz.getConstructor().newInstance();
+			} catch (NoSuchMethodException e) {
+				String message = "A parameterless constructor was not found for class " + clazz.getSimpleName();
+				throw new ControllerException(message, e);
+			} catch (InstantiationException e) {
+				throw new ControllerException(clazz.getSimpleName() + " cannot be abstract", e);
+			} catch (IllegalAccessException e) {
+				String message = "The constructor for " + clazz.getSimpleName() + " must be public";
+				throw new ControllerException(message, e);
+			} catch (InvocationTargetException e) {
+				String message = "The constructor for " + clazz.getSimpleName() + " threw an exception";
+				throw new ControllerException(message, e);
 			} finally {
 				clockCopy.set(null);
 			}
