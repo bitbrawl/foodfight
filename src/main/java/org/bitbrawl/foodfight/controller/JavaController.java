@@ -4,10 +4,10 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.LinkedHashSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -20,8 +20,7 @@ import org.bitbrawl.foodfight.engine.match.MatchHistory;
 import org.bitbrawl.foodfight.engine.runner.ControllerException;
 import org.bitbrawl.foodfight.engine.video.FrameGenerator;
 import org.bitbrawl.foodfight.engine.video.ImageFrame;
-
-import com.google.gson.GsonBuilder;
+import org.bitbrawl.foodfight.field.Player;
 
 import net.jcip.annotations.ThreadSafe;
 
@@ -62,31 +61,25 @@ public abstract class JavaController implements Controller {
 			allClasses.addAll(classList);
 		Collections.shuffle(allClasses, ThreadLocalRandom.current());
 
-		Set<Set<Controller>> controllers = new LinkedHashSet<>();
-		for (int i = 0, n = matchType.getNumberOfTeams(); i < n; i++) {
-			Set<Controller> team = new LinkedHashSet<>();
-			for (int j = 0, m = matchType.getNumberOfPlayers() / matchType.getNumberOfTeams(); j < m; j++) {
-				Logger playerLogger = Logger.getAnonymousLogger();
-				Clock clock = unit -> Long.MAX_VALUE;
-				Controller controller;
-				Class<? extends JavaController> clazz = allClasses.remove(allClasses.size() - 1);
-				try {
-					controller = newInstance(clazz, playerLogger, clock);
-				} catch (ControllerException e) {
-					matchLogger.log(Level.SEVERE, "Unable to instantiate new Controller", e);
-					controller = (f, t, p) -> null;
-				}
-				team.add(controller);
+		Map<Character, Controller> controllers = new HashMap<>();
+		for (Player player : field.getPlayers()) {
+			Logger playerLogger = Logger.getAnonymousLogger();
+			Clock clock = unit -> Long.MAX_VALUE;
+			Controller controller;
+			Class<? extends JavaController> clazz = allClasses.remove(allClasses.size() - 1);
+			try {
+				controller = newInstance(clazz, playerLogger, clock);
+			} catch (ControllerException e) {
+				matchLogger.log(Level.SEVERE, "Unable to instantiate new Controller", e);
+				controller = (f, t, p) -> null;
 			}
-			controllers.add(team);
+			controllers.put(player.getSymbol(), controller);
 		}
 
 		FrameGenerator generator = new FrameGenerator(field);
 		ImageFrame frame = new ImageFrame(generator.apply(field));
-		MatchHistory history = new Match(field, controllers, new DefaultTurnRunner(matchLogger),
+		MatchHistory history = new Match(field, controllers::get, new DefaultTurnRunner(matchLogger),
 				state -> frame.updateImage(generator.apply(state))).run();
-
-		matchLogger.info(new GsonBuilder().setPrettyPrinting().create().toJson(history));
 
 	}
 

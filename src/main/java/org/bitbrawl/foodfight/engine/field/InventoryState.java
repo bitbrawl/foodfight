@@ -15,8 +15,22 @@ public class InventoryState implements Inventory {
 
 	private final Map<Player.Hand, Food.Type> map;
 
-	public InventoryState(Map<Player.Hand, ? extends Food.Type> map) {
+	public InventoryState(Map<Player.Hand, Food.Type> map) {
 		this.map = new EnumMap<>(map);
+	}
+
+	public static InventoryState fromInventory(Inventory inventory) {
+		if (inventory instanceof InventoryState)
+			return (InventoryState) inventory;
+		if (inventory instanceof DynamicInventory)
+			return ((DynamicInventory) inventory).getState();
+		Map<Player.Hand, Food.Type> map = new EnumMap<>(Player.Hand.class);
+		for (Player.Hand hand : Player.Hand.values()) {
+			Food.Type type = inventory.get(hand);
+			if (type != null)
+				map.put(hand, type);
+		}
+		return new InventoryState(map);
 	}
 
 	@SuppressWarnings("unused")

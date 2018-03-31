@@ -13,6 +13,12 @@ public final class CollisionState implements Collision {
 		this.damage = damage;
 	}
 
+	public static CollisionState fromCollision(Collision collision) {
+		if (collision instanceof CollisionState)
+			return (CollisionState) collision;
+		return new CollisionState(collision.getLocation(), collision.getDamage());
+	}
+
 	@SuppressWarnings("unused")
 	private CollisionState() {
 		location = null;

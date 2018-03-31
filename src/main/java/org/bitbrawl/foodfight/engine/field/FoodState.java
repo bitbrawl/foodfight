@@ -21,6 +21,14 @@ public final class FoodState implements Food {
 		this.heading = heading;
 	}
 
+	public static FoodState fromFood(Food food) {
+		if (food instanceof FoodState)
+			return (FoodState) food;
+		if (food instanceof DynamicFood)
+			return ((DynamicFood) food).getState();
+		return new FoodState(food.getType(), food.getLocation(), food.getHeight(), food.getHeading());
+	}
+
 	@SuppressWarnings("unused")
 	private FoodState() {
 		type = null;

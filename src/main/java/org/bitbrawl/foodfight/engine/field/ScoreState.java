@@ -11,9 +11,23 @@ public final class ScoreState implements Score {
 	private final Map<Event, Integer> counts;
 	private final int totalPoints;
 
-	public ScoreState(Map<Event, ? extends Integer> counts) {
+	public ScoreState(Map<Event, Integer> counts) {
 		this.counts = new EnumMap<>(counts);
 		totalPoints = counts.entrySet().stream().mapToInt(e -> e.getValue() * e.getKey().getPointValue()).sum();
+	}
+
+	public static ScoreState fromScore(Score score) {
+		if (score instanceof ScoreState)
+			return (ScoreState) score;
+		if (score instanceof DynamicScore)
+			return ((DynamicScore) score).getState();
+		Map<Event, Integer> counts = new EnumMap<>(Event.class);
+		for (Event event : Event.values()) {
+			int count = score.getCount(event);
+			if (count != 0)
+				counts.put(event, count);
+		}
+		return new ScoreState(counts);
 	}
 
 	@SuppressWarnings("unused")

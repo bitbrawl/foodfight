@@ -2,6 +2,7 @@ package org.bitbrawl.foodfight.engine.field;
 
 import java.lang.reflect.Type;
 import java.util.AbstractSet;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -38,8 +39,8 @@ public final class FieldState implements Field {
 	private final Set<CollisionState> collisionStates;
 	private final transient Set<Collision> collisions;
 
-	public FieldState(int turnNumber, Collection<? extends TeamState> teams, Collection<? extends FoodState> food,
-			Collection<? extends CollisionState> collisions) {
+	public FieldState(int turnNumber, Collection<TeamState> teams, Collection<FoodState> food,
+			Collection<CollisionState> collisions) {
 
 		this.turnNumber = turnNumber;
 
@@ -58,6 +59,26 @@ public final class FieldState implements Field {
 		collisionStates = Collections.unmodifiableSet(tempCollisions);
 		this.collisions = Collections.unmodifiableSet(tempCollisions);
 
+	}
+
+	public static FieldState fromField(Field field) {
+		if (field instanceof FieldState)
+			return (FieldState) field;
+		if (field instanceof DynamicField)
+			return ((DynamicField) field).getState();
+		Set<Team> fieldTeams = field.getTeams();
+		Collection<TeamState> teams = new ArrayList<>(fieldTeams.size());
+		for (Team team : fieldTeams)
+			teams.add(TeamState.fromTeam(team));
+		Set<Food> fieldFoods = field.getFood();
+		Collection<FoodState> foods = new ArrayList<>(fieldFoods.size());
+		for (Food food : field.getFood())
+			foods.add(FoodState.fromFood(food));
+		Set<Collision> fieldCollisions = field.getCollisions();
+		Collection<CollisionState> collisions = new ArrayList<>(fieldCollisions.size());
+		for (Collision collision : field.getCollisions())
+			collisions.add(CollisionState.fromCollision(collision));
+		return new FieldState(field.getTurnNumber(), teams, foods, collisions);
 	}
 
 	@Override

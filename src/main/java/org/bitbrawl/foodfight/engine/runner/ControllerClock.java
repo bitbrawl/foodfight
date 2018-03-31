@@ -49,8 +49,6 @@ public final class ControllerClock implements Clock {
 				return;
 			long timeSpentThisTurn = System.nanoTime() - startTime;
 			timeLeft -= timeSpentThisTurn;
-			if (timeLeft < 0)
-				timeLeft = 0;
 			startTime = -1;
 		} finally {
 			writeLock.unlock();

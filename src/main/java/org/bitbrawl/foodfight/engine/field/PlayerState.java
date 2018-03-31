@@ -23,6 +23,20 @@ public final class PlayerState implements Player {
 		this.health = health;
 	}
 
+	public static PlayerState fromPlayer(Player player) {
+		if (player instanceof PlayerState)
+			return (PlayerState) player;
+		if (player instanceof DynamicPlayer)
+			return ((DynamicPlayer) player).getState();
+		char symbol = player.getSymbol();
+		Vector location = player.getLocation();
+		double height = player.getHeight();
+		Direction heading = player.getHeading();
+		InventoryState inventory = InventoryState.fromInventory(player.getInventory());
+		double health = player.getHealth();
+		return new PlayerState(symbol, location, height, heading, inventory, health);
+	}
+
 	@SuppressWarnings("unused")
 	private PlayerState() {
 		symbol = 0;

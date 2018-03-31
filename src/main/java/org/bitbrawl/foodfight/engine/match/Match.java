@@ -2,21 +2,19 @@ package org.bitbrawl.foodfight.engine.match;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import org.bitbrawl.foodfight.controller.Controller;
 import org.bitbrawl.foodfight.controller.Controller.Action;
 import org.bitbrawl.foodfight.engine.field.DynamicField;
 import org.bitbrawl.foodfight.engine.field.DynamicPlayer;
-import org.bitbrawl.foodfight.engine.field.DynamicTeam;
 import org.bitbrawl.foodfight.engine.field.FieldState;
 import org.bitbrawl.foodfight.field.Field;
 
@@ -28,7 +26,7 @@ public final class Match {
 	private final TurnRunner turnRunner;
 	private final Consumer<FieldState> videoConsumer;
 
-	public Match(FieldState field, Set<? extends Set<? extends Controller>> controllers, TurnRunner turnRunner,
+	public Match(FieldState field, Function<Character, ? extends Controller> controllers, TurnRunner turnRunner,
 			Consumer<FieldState> videoConsumer) {
 		Objects.requireNonNull(field, "field cannot be null");
 		Objects.requireNonNull(controllers, "controllers cannot be null");
@@ -36,24 +34,8 @@ public final class Match {
 		this.field = new DynamicField(field);
 		this.videoConsumer = videoConsumer.andThen(fieldStates::add);
 
-		Set<DynamicTeam> teams = this.field.getDynamicTeams();
-		if (teams.size() != controllers.size())
-			throw new IllegalArgumentException("Number of teams does not match");
-		Iterator<DynamicTeam> teamIt = teams.iterator();
-		for (Set<? extends Controller> controllerGroup : controllers) {
-			DynamicTeam team = teamIt.next();
-			Set<DynamicPlayer> players = team.getDynamicPlayers();
-			if (players.size() != controllerGroup.size())
-				throw new IllegalArgumentException("Size of teams does not match");
-
-			Iterator<DynamicPlayer> playerIt = players.iterator();
-			for (Controller controller : controllerGroup) {
-				DynamicPlayer player = playerIt.next();
-
-				this.controllers.put(controller, player);
-
-			}
-		}
+		for (DynamicPlayer player : this.field.getDynamicPlayers())
+			this.controllers.put(controllers.apply(player.getSymbol()), player);
 
 		this.turnRunner = turnRunner;
 

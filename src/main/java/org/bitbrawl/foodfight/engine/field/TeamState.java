@@ -1,6 +1,7 @@
 package org.bitbrawl.foodfight.engine.field;
 
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -25,13 +26,27 @@ public final class TeamState implements Team {
 	private final TableState table;
 	private final ScoreState score;
 
-	public TeamState(char symbol, Collection<? extends PlayerState> players, TableState table, ScoreState score) {
+	public TeamState(char symbol, Collection<PlayerState> players, TableState table, ScoreState score) {
 		this.symbol = symbol;
 		Set<PlayerState> tempPlayers = new LinkedHashSet<>(players);
 		playerStates = Collections.unmodifiableSet(tempPlayers);
 		this.players = Collections.unmodifiableSet(tempPlayers);
 		this.table = table;
 		this.score = score;
+	}
+
+	public static TeamState fromTeam(Team team) {
+		if (team instanceof TeamState)
+			return (TeamState) team;
+		if (team instanceof DynamicTeam)
+			return ((DynamicTeam) team).getState();
+		Set<Player> teamPlayers = team.getPlayers();
+		Collection<PlayerState> players = new ArrayList<>(teamPlayers.size());
+		for (Player player : teamPlayers)
+			players.add(PlayerState.fromPlayer(player));
+		TableState table = TableState.fromTable(team.getTable());
+		ScoreState score = ScoreState.fromScore(team.getScore());
+		return new TeamState(team.getSymbol(), players, table, score);
 	}
 
 	@Override

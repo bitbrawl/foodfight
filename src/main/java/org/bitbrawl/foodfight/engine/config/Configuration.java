@@ -2,13 +2,16 @@ package org.bitbrawl.foodfight.engine.config;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.io.Writer;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 import org.bitbrawl.foodfight.engine.match.Match;
 
@@ -27,11 +30,53 @@ public final class Configuration {
 	private final int numMatches;
 	private final Match.Type matchType;
 	private final List<ControllerConfig> controllers;
+	private final Path data;
 
-	private Configuration(int numMatches, Match.Type matchType, ControllerConfig[] players) {
+	private Configuration(int numMatches, Match.Type matchType, ControllerConfig[] controllers, Path data) {
 		this.numMatches = numMatches;
 		this.matchType = matchType;
-		this.controllers = Collections.unmodifiableList(Arrays.asList(players));
+		this.controllers = controllers == null ? null : Collections.unmodifiableList(Arrays.asList(controllers));
+		this.data = data;
+	}
+
+	public static Configuration getConfig(Path configFile) throws IOException, ConfigException {
+		Objects.requireNonNull(configFile, "configFile cannot be null");
+
+		Configuration result;
+
+		if (Files.notExists(configFile)) {
+
+			result = getDefault();
+			try (Writer writer = Files.newBufferedWriter(configFile, StandardOpenOption.CREATE_NEW)) {
+				gson.toJson(result, writer);
+			}
+
+		} else {
+
+			try (Reader reader = Files.newBufferedReader(configFile)) {
+				result = gson.fromJson(reader, Configuration.class);
+			} catch (JsonIOException e) {
+				throw new IOException("Unable to read configuration file", e);
+			} catch (JsonSyntaxException e) {
+				throw new ConfigException("Invalid JSON in configuration file", e);
+			}
+
+			if (result.numMatches <= 0)
+				throw new ConfigException("numMatches must be at least 1");
+			if (result.matchType == null)
+				throw new ConfigException("matchType must be defined");
+			List<ControllerConfig> controllers = result.controllers;
+			if (controllers == null)
+				throw new ConfigException("The list of controllers must be defined");
+			if (controllers.isEmpty())
+				throw new ConfigException("The list of controllers cannot be empty");
+			if (result.data == null)
+				throw new ConfigException("The data folder must be specified");
+
+		}
+
+		return result;
+
 	}
 
 	public int getNumMatches() {
@@ -46,38 +91,27 @@ public final class Configuration {
 		return controllers;
 	}
 
-	public static Configuration getInstance() throws IOException {
-		synchronized (Configuration.class) {
-			if (instance != null)
-				return instance;
-
-			if (Files.notExists(CONFIG_PATH))
-				Files.copy(Configuration.class.getResourceAsStream("/config.json"), CONFIG_PATH);
-
-			Gson gson = new GsonBuilder().registerTypeAdapter(Configuration.class, Deserializer.INSTANCE).create();
-			try (Reader reader = Files.newBufferedReader(CONFIG_PATH)) {
-				instance = gson.fromJson(reader, Configuration.class);
-			} catch (JsonIOException e) {
-				throw new IOException("Unable to read configuration file", e);
-			} catch (JsonSyntaxException e) {
-				throw new IOException("Invalid JSON in configuration file", e);
-			}
-
-			if (instance.matchType == null)
-				throw new IOException("The match type cannot be null");
-			List<ControllerConfig> controllers = instance.controllers;
-			if (controllers == null)
-				throw new IOException("The list of controllers must be defined");
-			if (controllers.isEmpty())
-				throw new IOException("The list of controllers cannot be empty");
-
-			return instance;
-
-		}
+	public Path getData() {
+		return data;
 	}
 
-	private static volatile Configuration instance;
-	private static final Path CONFIG_PATH = Paths.get("config.json");
+	private static Configuration getDefault() {
+
+		ControllerConfig[] players = new ControllerConfig[4];
+		Path sampleJar = Paths.get("players", "sample-players.jar");
+		players[0] = new ControllerConfig(sampleJar, "org.bitbrawl.foodfight.sample.DummyController");
+		players[1] = new ControllerConfig(sampleJar, "org.bitbrawl.foodfight.sample.RandomController");
+		players[2] = new ControllerConfig(sampleJar, "org.bitbrawl.foodfight.sample.HidingController");
+		players[3] = new ControllerConfig(sampleJar, "org.bitbrawl.foodfight.sample.WallsController");
+		Path data = Paths.get("data");
+
+		return new Configuration(3, Match.Type.FREE_FOR_ALL, players, data);
+
+	}
+
+	private static final Gson gson = new GsonBuilder().registerTypeAdapter(Configuration.class, Deserializer.INSTANCE)
+			.registerTypeAdapter(Path.class, PathSerializer.INSTANCE)
+			.registerTypeAdapter(Path.class, PathDeserializer.INSTANCE).setPrettyPrinting().create();
 
 	public enum Deserializer implements JsonDeserializer<Configuration> {
 		INSTANCE;
@@ -89,9 +123,10 @@ public final class Configuration {
 			JsonObject object = json.getAsJsonObject();
 			int numMatches = object.getAsJsonPrimitive("numMatches").getAsInt();
 			Match.Type matchType = context.deserialize(object.getAsJsonPrimitive("matchType"), Match.Type.class);
-			ControllerConfig[] players = context.deserialize(object.getAsJsonArray("players"),
+			ControllerConfig[] controllers = context.deserialize(object.getAsJsonArray("controllers"),
 					ControllerConfig[].class);
-			return new Configuration(numMatches, matchType, players);
+			Path data = context.deserialize(object.getAsJsonPrimitive("data"), Path.class);
+			return new Configuration(numMatches, matchType, controllers, data);
 
 		}
 

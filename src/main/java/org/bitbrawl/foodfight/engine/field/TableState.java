@@ -31,6 +31,14 @@ public final class TableState implements Table {
 		this.food = Collections.unmodifiableSet(EnumSet.copyOf(food));
 	}
 
+	public static TableState fromTable(Table table) {
+		if (table instanceof TableState)
+			return (TableState) table;
+		if (table instanceof DynamicTable)
+			return ((DynamicTable) table).getState();
+		return new TableState(table.getLocation(), table.getFood());
+	}
+
 	@SuppressWarnings("unused")
 	private TableState() {
 		location = null;
