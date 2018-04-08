@@ -11,6 +11,11 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -48,6 +53,7 @@ public final class ControllerRunner implements AutoCloseable {
 	private final JsonReader jsonReader = new JsonReader(reader);
 	private final Writer outWriter = new OutputStreamWriter(System.out);
 	private final Writer writer = new BufferedWriter(outWriter);
+	private final ExecutorService executor = Executors.newSingleThreadExecutor();
 	private final Controller controller;
 	private DynamicField field;
 
@@ -63,12 +69,11 @@ public final class ControllerRunner implements AutoCloseable {
 
 	}
 
-	public void runTurn() throws IOException {
+	public void runTurn() throws IOException, InterruptedException, TimeoutException {
 
-		FieldState input = gson.fromJson(jsonReader, FieldState.class);
-		EngineLogger.INSTANCE.log(Level.INFO, "input: {0}", input);
-		char teamSymbol = gson.fromJson(jsonReader, char.class);
-		char playerSymbol = gson.fromJson(jsonReader, char.class);
+		FieldState input = readJson(FieldState.class);
+		char teamSymbol = readJson(char.class);
+		char playerSymbol = readJson(char.class);
 
 		if (field == null)
 			field = new DynamicField(input);
@@ -77,29 +82,47 @@ public final class ControllerRunner implements AutoCloseable {
 		Team team = field.getTeam(teamSymbol);
 		Player player = field.getPlayer(playerSymbol);
 		Controller.Action action = controller.playAction(field, team, player);
-		EngineLogger.INSTANCE.log(Level.INFO, "Returning action {0}", action);
 		gson.toJson(action, writer);
 		writer.write(" ");
 		writer.flush();
 
 	}
 
+	private <T> T readJson(Class<T> classOfT) throws InterruptedException, TimeoutException {
+		try {
+			@SuppressWarnings("unchecked")
+			T result = (T) executor.submit(() -> gson.fromJson(jsonReader, classOfT)).get(5L, TimeUnit.MINUTES);
+			return result;
+		} catch (ExecutionException e) {
+			Throwable cause = e.getCause();
+			if (cause instanceof Error)
+				throw (Error) cause;
+			else if (cause instanceof RuntimeException)
+				throw (RuntimeException) cause;
+			throw new AssertionError(cause);
+		}
+	}
+
 	@Override
 	public void close() throws IOException {
 		try {
-			try {
-				writer.close();
-			} finally {
-				outWriter.close();
-			}
+			executor.shutdown();
 		} finally {
 			try {
-				jsonReader.close();
+				try {
+					writer.close();
+				} finally {
+					outWriter.close();
+				}
 			} finally {
 				try {
-					reader.close();
+					jsonReader.close();
 				} finally {
-					inReader.close();
+					try {
+						reader.close();
+					} finally {
+						inReader.close();
+					}
 				}
 			}
 		}
@@ -116,10 +139,8 @@ public final class ControllerRunner implements AutoCloseable {
 		Path jar = Paths.get(args[0]);
 		String mainClass = args[1];
 		try (ControllerRunner runner = new ControllerRunner(jar, mainClass)) {
-			for (int i = 1, n = Field.TOTAL_TURNS; i <= n; i++) {
-				logger.log(Level.INFO, "Starting turn {0}", i);
+			for (int i = 0, n = Field.TOTAL_TURNS; i < n; i++)
 				runner.runTurn();
-			}
 		} catch (IOException e) {
 			logger.log(Level.SEVERE, "Unable to read from " + jar, e);
 		} catch (ClassNotFoundException e) {
@@ -128,10 +149,8 @@ public final class ControllerRunner implements AutoCloseable {
 			logger.log(Level.SEVERE, "Problem with controller", e);
 		} catch (InterruptedException e) {
 			logger.log(Level.SEVERE, "ControllerRunner interrupted", e);
-		} catch (Throwable t) {
-			logger.log(Level.SEVERE, "Unknown exception", t);
-		} finally {
-			logger.info("Complete");
+		} catch (TimeoutException e) {
+			logger.log(Level.SEVERE, "No signal from game engine", e);
 		}
 
 	}
