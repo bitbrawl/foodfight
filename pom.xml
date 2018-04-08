@@ -37,5 +37,6 @@
 		<module>foodfight-engine</module>
 		<module>sample-players</module>
 		<module>foodfight-runner</module>
+		<module>foodfight-server</module>
 	</modules>
 </project>

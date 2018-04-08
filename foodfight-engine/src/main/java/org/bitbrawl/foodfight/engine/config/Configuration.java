@@ -13,7 +13,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-import org.bitbrawl.foodfight.engine.match.Match;
+import org.bitbrawl.foodfight.field.MatchType;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -28,11 +28,11 @@ import com.google.gson.JsonSyntaxException;
 public final class Configuration {
 
 	private final int numMatches;
-	private final Match.Type matchType;
+	private final MatchType matchType;
 	private final List<ControllerConfig> controllers;
 	private final Path data;
 
-	private Configuration(int numMatches, Match.Type matchType, ControllerConfig[] controllers, Path data) {
+	private Configuration(int numMatches, MatchType matchType, ControllerConfig[] controllers, Path data) {
 		this.numMatches = numMatches;
 		this.matchType = matchType;
 		this.controllers = controllers == null ? null : Collections.unmodifiableList(Arrays.asList(controllers));
@@ -83,7 +83,7 @@ public final class Configuration {
 		return numMatches;
 	}
 
-	public Match.Type getMatchType() {
+	public MatchType getMatchType() {
 		return matchType;
 	}
 
@@ -99,13 +99,13 @@ public final class Configuration {
 
 		ControllerConfig[] players = new ControllerConfig[4];
 		Path sampleJar = Paths.get("players", "sample-players.jar");
-		players[0] = new ControllerConfig(sampleJar, "org.bitbrawl.foodfight.sample.DummyController");
-		players[1] = new ControllerConfig(sampleJar, "org.bitbrawl.foodfight.sample.RandomController");
-		players[2] = new ControllerConfig(sampleJar, "org.bitbrawl.foodfight.sample.HidingController");
-		players[3] = new ControllerConfig(sampleJar, "org.bitbrawl.foodfight.sample.WallsController");
+		players[0] = new ControllerConfig("sample-dummy", sampleJar, "org.bitbrawl.foodfight.sample.DummyController");
+		players[1] = new ControllerConfig("sample-random", sampleJar, "org.bitbrawl.foodfight.sample.RandomController");
+		players[2] = new ControllerConfig("sample-hiding", sampleJar, "org.bitbrawl.foodfight.sample.HidingController");
+		players[3] = new ControllerConfig("sample-walls", sampleJar, "org.bitbrawl.foodfight.sample.WallsController");
 		Path data = Paths.get("data");
 
-		return new Configuration(3, Match.Type.FREE_FOR_ALL, players, data);
+		return new Configuration(3, MatchType.FREE_FOR_ALL, players, data);
 
 	}
 
@@ -122,7 +122,7 @@ public final class Configuration {
 
 			JsonObject object = json.getAsJsonObject();
 			int numMatches = object.getAsJsonPrimitive("numMatches").getAsInt();
-			Match.Type matchType = context.deserialize(object.getAsJsonPrimitive("matchType"), Match.Type.class);
+			MatchType matchType = context.deserialize(object.getAsJsonPrimitive("matchType"), MatchType.class);
 			ControllerConfig[] controllers = context.deserialize(object.getAsJsonArray("controllers"),
 					ControllerConfig[].class);
 			Path data = context.deserialize(object.getAsJsonPrimitive("data"), Path.class);

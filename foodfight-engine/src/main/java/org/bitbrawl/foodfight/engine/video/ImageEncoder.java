@@ -33,7 +33,7 @@ public final class ImageEncoder implements AutoCloseable {
 		this.videoFile = videoFile;
 		unfinished = videoFile.resolveSibling(videoFile.getFileName().toString().replace(".mp4", ".tmp"));
 
-		MuxerFormat format = MuxerFormat.guessFormat(null, videoFile.getFileName().toString(), "video/mp4");
+		MuxerFormat format = MuxerFormat.guessFormat("mp4", videoFile.getFileName().toString(), "video/mp4");
 		muxer = Muxer.make(unfinished.toString(), format, null);
 
 		format = muxer.getFormat();

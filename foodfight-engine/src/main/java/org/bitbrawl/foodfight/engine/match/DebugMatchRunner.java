@@ -19,6 +19,7 @@ import org.bitbrawl.foodfight.engine.field.FieldState;
 import org.bitbrawl.foodfight.engine.logging.EngineLogger;
 import org.bitbrawl.foodfight.engine.video.FrameGenerator;
 import org.bitbrawl.foodfight.engine.video.ImageFrame;
+import org.bitbrawl.foodfight.field.MatchType;
 import org.bitbrawl.foodfight.field.Player;
 
 public final class DebugMatchRunner {
@@ -28,7 +29,7 @@ public final class DebugMatchRunner {
 	}
 
 	@SafeVarargs
-	public static void runDebugMatch(Match.Type matchType, Class<? extends JavaController>... classes) {
+	public static void runDebugMatch(MatchType matchType, Class<? extends JavaController>... classes) {
 		Objects.requireNonNull(classes, "classes cannot be null");
 		if (classes.length <= 0)
 			throw new IllegalArgumentException("classes cannot be empty");
@@ -57,9 +58,9 @@ public final class DebugMatchRunner {
 			controllers.put(player.getSymbol(), controller);
 		}
 
-		FrameGenerator generator = new FrameGenerator(field);
+		FrameGenerator generator = new FrameGenerator(field, c -> controllers.get(c).getClass().getSimpleName());
 		ImageFrame frame = new ImageFrame(generator.apply(field));
-		MatchHistory history = new Match(field, controllers::get, new DefaultTurnRunner(),
+		MatchHistory history = new Match(0, field, controllers::get, new DefaultTurnRunner(),
 				state -> frame.updateImage(generator.apply(state))).run();
 
 	}

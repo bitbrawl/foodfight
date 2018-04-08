@@ -9,6 +9,7 @@ import java.util.Set;
 import org.bitbrawl.foodfight.field.Collision;
 import org.bitbrawl.foodfight.field.Field;
 import org.bitbrawl.foodfight.field.Food;
+import org.bitbrawl.foodfight.field.MatchType;
 import org.bitbrawl.foodfight.field.Player;
 import org.bitbrawl.foodfight.field.Team;
 
@@ -47,6 +48,11 @@ public final class DynamicField implements Field, Dynamic<FieldState> {
 	@Override
 	public int getTurnNumber() {
 		return state.getTurnNumber();
+	}
+
+	@Override
+	public MatchType getMatchType() {
+		return state.getMatchType();
 	}
 
 	@Override

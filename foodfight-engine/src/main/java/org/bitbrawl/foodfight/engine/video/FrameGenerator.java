@@ -15,6 +15,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Function;
@@ -24,6 +25,7 @@ import java.util.stream.IntStream;
 import org.bitbrawl.foodfight.engine.field.FieldState;
 import org.bitbrawl.foodfight.engine.field.PlayerState;
 import org.bitbrawl.foodfight.engine.field.TeamState;
+import org.bitbrawl.foodfight.engine.match.CharFunction;
 import org.bitbrawl.foodfight.field.Collision;
 import org.bitbrawl.foodfight.field.Field;
 import org.bitbrawl.foodfight.field.Food;
@@ -38,13 +40,17 @@ import org.bitbrawl.foodfight.util.Vector;
 public final class FrameGenerator implements Function<FieldState, BufferedImage> {
 
 	private final ImageResources resources = new ImageResources();
-	private final BufferedImage background;
 	private final Map<Character, Float> playerColors = new HashMap<>();
 	private final Map<Character, BufferedImage> playerImages = new HashMap<>();
 	private final Map<Character, BufferedImage> profileImages = new HashMap<>();
-	// private final FontMetrics metrics;
+	private final BufferedImage background;
+	private final CharFunction<String> names;
 
-	public FrameGenerator(FieldState initialState) {
+	public FrameGenerator(FieldState initialState, CharFunction<String> names) {
+		Objects.requireNonNull(initialState, "initialState cannot be null");
+		Objects.requireNonNull(names, "names cannot be null");
+
+		this.names = names;
 
 		background = new BufferedImage(FRAME_WIDTH, FRAME_HEIGHT, BufferedImage.TYPE_3BYTE_BGR);
 		Graphics2D graphics = background.createGraphics();
@@ -93,6 +99,7 @@ public final class FrameGenerator implements Function<FieldState, BufferedImage>
 				// player info text
 				graphics.setColor(Color.BLACK);
 				graphics.setFont(new Font(Font.MONOSPACED, Font.BOLD, 20));
+				// TODO write name
 				// int smallAscent = graphics.getFontMetrics().getAscent();
 
 				// generating player images

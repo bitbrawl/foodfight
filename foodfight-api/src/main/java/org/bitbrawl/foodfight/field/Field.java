@@ -7,6 +7,8 @@ public interface Field {
 
 	public int getTurnNumber();
 
+	public MatchType getMatchType();
+
 	public Set<Team> getTeams();
 
 	public Team getTeam(char symbol);

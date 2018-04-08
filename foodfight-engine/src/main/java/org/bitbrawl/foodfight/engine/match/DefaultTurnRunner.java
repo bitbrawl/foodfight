@@ -57,8 +57,8 @@ public final class DefaultTurnRunner implements TurnRunner {
 		if (field.getTurnNumber() >= Field.TOTAL_TURNS)
 			field = breakTies(field);
 
-		return new FieldState(field.getTurnNumber() + 1, field.getTeamStates(), field.getFoodStates(),
-				field.getCollisionStates());
+		return new FieldState(field.getTurnNumber() + 1, field.getMatchType(), field.getTeamStates(),
+				field.getFoodStates(), field.getCollisionStates());
 
 	}
 
@@ -167,7 +167,7 @@ public final class DefaultTurnRunner implements TurnRunner {
 
 		}
 
-		return new FieldState(field.getTurnNumber(), teams, foods, field.getCollisionStates());
+		return new FieldState(field.getTurnNumber(), field.getMatchType(), teams, foods, field.getCollisionStates());
 
 	}
 
@@ -321,7 +321,7 @@ public final class DefaultTurnRunner implements TurnRunner {
 
 		}
 
-		return new FieldState(field.getTurnNumber(), teams, remainingFood, collisions);
+		return new FieldState(field.getTurnNumber(), field.getMatchType(), teams, remainingFood, collisions);
 
 	}
 
@@ -335,7 +335,8 @@ public final class DefaultTurnRunner implements TurnRunner {
 			teams.add(new TeamState(team.getSymbol(), team.getPlayerStates(), team.getTable(), score));
 		}
 
-		return new FieldState(field.getTurnNumber(), teams, field.getFoodStates(), field.getCollisionStates());
+		return new FieldState(field.getTurnNumber(), field.getMatchType(), teams, field.getFoodStates(),
+				field.getCollisionStates());
 
 	}
 
@@ -392,7 +393,8 @@ public final class DefaultTurnRunner implements TurnRunner {
 			newTeams.add(new TeamState(team.getSymbol(), team.getPlayerStates(), team.getTable(), score));
 		}
 
-		return new FieldState(field.getTurnNumber(), newTeams, field.getFoodStates(), field.getCollisionStates());
+		return new FieldState(field.getTurnNumber(), field.getMatchType(), newTeams, field.getFoodStates(),
+				field.getCollisionStates());
 
 	}
 
@@ -474,7 +476,7 @@ public final class DefaultTurnRunner implements TurnRunner {
 			else
 				teams.add(fieldTeam);
 
-		return new FieldState(field.getTurnNumber(), teams, food, field.getCollisionStates());
+		return new FieldState(field.getTurnNumber(), field.getMatchType(), teams, food, field.getCollisionStates());
 
 	}
 

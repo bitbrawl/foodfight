@@ -22,6 +22,7 @@ import org.bitbrawl.foodfight.engine.field.TeamState;
 import org.bitbrawl.foodfight.field.Event;
 import org.bitbrawl.foodfight.field.Field;
 import org.bitbrawl.foodfight.field.Food;
+import org.bitbrawl.foodfight.field.MatchType;
 import org.bitbrawl.foodfight.field.Player;
 import org.bitbrawl.foodfight.field.Player.Hand;
 import org.bitbrawl.foodfight.field.Table;
@@ -30,9 +31,9 @@ import org.bitbrawl.foodfight.util.Vector;
 
 public final class FieldGenerator implements Supplier<FieldState> {
 
-	private final Match.Type type;
+	private final MatchType type;
 
-	public FieldGenerator(Match.Type type) {
+	public FieldGenerator(MatchType type) {
 		this.type = type;
 	}
 
@@ -41,7 +42,7 @@ public final class FieldGenerator implements Supplier<FieldState> {
 
 		Queue<FieldZone> zones = getFieldZones();
 
-		return new FieldState(0, generateTeams(zones), generateFood(zones), Collections.emptySet());
+		return new FieldState(0, type, generateTeams(zones), generateFood(zones), Collections.emptySet());
 
 	}
 
@@ -97,7 +98,7 @@ public final class FieldGenerator implements Supplier<FieldState> {
 	private Collection<FoodState> generateFood(Queue<? extends FieldZone> zones) {
 
 		List<FieldZone> foodZones = new ArrayList<>(Field.MAX_FOOD);
-		if (type.equals(Match.Type.DUEL))
+		if (type.equals(MatchType.DUEL))
 			for (int i = 0; i < Field.MAX_FOOD; i++)
 				foodZones.add(zones.remove());
 		else

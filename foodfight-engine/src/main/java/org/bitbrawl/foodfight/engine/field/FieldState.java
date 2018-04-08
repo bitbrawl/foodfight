@@ -14,6 +14,7 @@ import java.util.function.Function;
 import org.bitbrawl.foodfight.field.Collision;
 import org.bitbrawl.foodfight.field.Field;
 import org.bitbrawl.foodfight.field.Food;
+import org.bitbrawl.foodfight.field.MatchType;
 import org.bitbrawl.foodfight.field.Player;
 import org.bitbrawl.foodfight.field.Team;
 
@@ -30,6 +31,7 @@ import net.jcip.annotations.Immutable;
 public final class FieldState implements Field {
 
 	private final int turnNumber;
+	private final MatchType type;
 	private final Set<TeamState> teams;
 	private final transient Set<Team> accessibleTeams;
 	private final transient Set<PlayerState> players;
@@ -39,10 +41,11 @@ public final class FieldState implements Field {
 	private final Set<CollisionState> collisions;
 	private final transient Set<Collision> accessibleCollisions;
 
-	public FieldState(int turnNumber, Collection<TeamState> teams, Collection<FoodState> food,
+	public FieldState(int turnNumber, MatchType type, Collection<TeamState> teams, Collection<FoodState> food,
 			Collection<CollisionState> collisions) {
 
 		this.turnNumber = turnNumber;
+		this.type = type;
 
 		Set<TeamState> tempTeams = new LinkedHashSet<>(teams);
 		this.teams = Collections.unmodifiableSet(tempTeams);
@@ -78,12 +81,17 @@ public final class FieldState implements Field {
 		Collection<CollisionState> collisions = new ArrayList<>(fieldCollisions.size());
 		for (Collision collision : field.getCollisions())
 			collisions.add(CollisionState.fromCollision(collision));
-		return new FieldState(field.getTurnNumber(), teams, foods, collisions);
+		return new FieldState(field.getTurnNumber(), field.getMatchType(), teams, foods, collisions);
 	}
 
 	@Override
 	public int getTurnNumber() {
 		return turnNumber;
+	}
+
+	@Override
+	public MatchType getMatchType() {
+		return type;
 	}
 
 	@Override
@@ -221,6 +229,7 @@ public final class FieldState implements Field {
 
 			JsonObject object = json.getAsJsonObject();
 			int turnNumber = object.getAsJsonPrimitive("turnNumber").getAsInt();
+			MatchType type = context.deserialize(object.get("type"), MatchType.class);
 			Type teamsType = new TypeToken<List<TeamState>>() {
 			}.getType();
 			List<TeamState> teams = context.deserialize(object.get("teams"), teamsType);
@@ -231,7 +240,7 @@ public final class FieldState implements Field {
 			}.getType();
 			List<CollisionState> collisions = context.deserialize(object.get("collisions"), collisionsType);
 
-			return new FieldState(turnNumber, teams, food, collisions);
+			return new FieldState(turnNumber, type, teams, food, collisions);
 
 		}
 

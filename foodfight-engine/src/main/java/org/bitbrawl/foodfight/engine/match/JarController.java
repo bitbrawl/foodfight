@@ -35,6 +35,7 @@ public final class JarController implements Controller, AutoCloseable {
 			.registerTypeAdapter(InventoryState.class, InventoryState.Serializer.INSTANCE)
 			.registerTypeAdapter(Vector.class, Vector.Serializer.INSTANCE)
 			.registerTypeAdapter(Direction.class, Direction.Serializer.INSTANCE).create();
+	private final Path log;
 	private final Process process;
 	private final Writer outWriter;
 	private final Writer writer;
@@ -44,6 +45,8 @@ public final class JarController implements Controller, AutoCloseable {
 	private boolean isClosed;
 
 	public JarController(Path jar, String className, Path log) throws IOException {
+
+		this.log = log;
 
 		String runnerJar = Paths.get("foodfight-runner-0.1.0-jar-with-dependencies.jar").toAbsolutePath().toString();
 		String jarString = jar.toAbsolutePath().toString();
@@ -105,6 +108,10 @@ public final class JarController implements Controller, AutoCloseable {
 		} finally {
 			process.destroy();
 		}
+	}
+
+	public Path getLog() {
+		return log;
 	}
 
 }

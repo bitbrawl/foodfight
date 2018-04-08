@@ -34,6 +34,7 @@ import org.bitbrawl.foodfight.engine.match.Match;
 import org.bitbrawl.foodfight.engine.match.MatchHistory;
 import org.bitbrawl.foodfight.engine.video.FrameGenerator;
 import org.bitbrawl.foodfight.engine.video.ImageEncoder;
+import org.bitbrawl.foodfight.field.MatchType;
 import org.bitbrawl.foodfight.field.Player;
 import org.bitbrawl.foodfight.util.Direction;
 import org.bitbrawl.foodfight.util.Vector;
@@ -112,7 +113,7 @@ public enum GameEngine {
 
 		logger.log(Level.INFO, "Setting up {0}", matchName);
 
-		Match.Type matchType = config.getMatchType();
+		MatchType matchType = config.getMatchType();
 		Path matchData = config.getData().resolve(matchName);
 		try {
 			Files.createDirectories(matchData);
@@ -126,11 +127,13 @@ public enum GameEngine {
 		FieldState field = new FieldGenerator(matchType).get();
 
 		Map<Character, Controller> controllers = new HashMap<>();
+		Map<Character, String> names = new HashMap<>();
 		Collection<JarController> jarsToClose = new LinkedList<>();
 		try {
 			for (Player player : field.getPlayers()) {
 				char symbol = player.getSymbol();
 				ControllerConfig controllerConfig = controllerConfigs.remove();
+				names.put(symbol, controllerConfig.getName());
 				Path jar = controllerConfig.getJar();
 				String className = controllerConfig.getMainClass();
 				Path log = matchData.resolve("player-" + symbol + ".log");
@@ -146,7 +149,7 @@ public enum GameEngine {
 				controllers.put(symbol, controller);
 			}
 
-			FrameGenerator generator = new FrameGenerator(field);
+			FrameGenerator generator = new FrameGenerator(field, names::get);
 			Consumer<FieldState> videoConsumer;
 			ImageEncoder encoder = null;
 			try {
@@ -160,10 +163,11 @@ public enum GameEngine {
 			}
 
 			logger.info("Running match");
+			// TODO move video generation later
 
 			MatchHistory history;
 			try {
-				Match match = new Match(field, controllers::get, new DefaultTurnRunner(), videoConsumer);
+				Match match = new Match(matchNumber, field, controllers::get, new DefaultTurnRunner(), videoConsumer);
 				history = match.run();
 			} finally {
 				if (encoder != null)
@@ -179,7 +183,6 @@ public enum GameEngine {
 			logger.log(Level.INFO, "Writing match history to {0}", traceFile);
 
 			Gson gson = new GsonBuilder().enableComplexMapKeySerialization()
-					.registerTypeAdapter(MatchHistory.class, MatchHistory.Serializer.INSTANCE)
 					.registerTypeAdapter(ScoreState.class, ScoreState.Serializer.INSTANCE)
 					.registerTypeAdapter(InventoryState.class, InventoryState.Serializer.INSTANCE)
 					.registerTypeAdapter(Vector.class, Vector.Serializer.INSTANCE)
