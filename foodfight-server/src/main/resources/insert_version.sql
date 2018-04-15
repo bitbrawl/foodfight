@@ -10,8 +10,3 @@ INSERT INTO competitor_version
             )
 ON DUPLICATE KEY
 UPDATE id = id;
-
-SELECT id
-FROM   competitor_version
-WHERE  competitor_id = ?
-AND    version_name = ?;

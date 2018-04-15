@@ -4,9 +4,10 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -22,23 +23,27 @@ import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.bitbrawl.foodfight.controller.Controller;
 import org.bitbrawl.foodfight.engine.field.FieldState;
+import org.bitbrawl.foodfight.engine.field.InventoryState;
 import org.bitbrawl.foodfight.engine.field.PlayerState;
+import org.bitbrawl.foodfight.engine.field.ScoreState;
 import org.bitbrawl.foodfight.engine.field.TeamState;
+import org.bitbrawl.foodfight.engine.logging.EngineLogger;
 import org.bitbrawl.foodfight.engine.match.CharFunction;
-import org.bitbrawl.foodfight.engine.match.DefaultTurnRunner;
 import org.bitbrawl.foodfight.engine.match.FieldGenerator;
 import org.bitbrawl.foodfight.engine.match.JarController;
 import org.bitbrawl.foodfight.engine.match.Match;
 import org.bitbrawl.foodfight.engine.match.MatchHistory;
 import org.bitbrawl.foodfight.field.MatchType;
+import org.bitbrawl.foodfight.util.Direction;
+import org.bitbrawl.foodfight.util.Vector;
 
 import org.apache.commons.math3.stat.inference.AlternativeHypothesis;
 import org.apache.commons.math3.stat.inference.BinomialTest;
@@ -63,29 +68,23 @@ import com.amazonaws.auth.AWSCredentials;
 import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 class Database {
 
-	private final String url;
-	private final Path repoFolder;
-	private final Path dataFolder;
-	private final String insertMatchQuery, insertVersionQuery, insertTeamQuery, insertPlayerQuery, insertPairwiseQuery;
+	private final String insertVersionQuery, insertPairwiseQuery, selectPairwiseQuery;
 	private final ServerConfig config;
 
-	public Database(String url, Path repoFolder, Path dataFolder) throws IOException {
+	public Database(ServerConfig config) throws IOException {
 
-		this.url = url;
-		this.repoFolder = repoFolder;
-		this.dataFolder = dataFolder;
-
-		insertMatchQuery = sqlFileToString("insert_match.sql");
 		insertVersionQuery = sqlFileToString("insert_version.sql");
-		insertTeamQuery = sqlFileToString("insert_team.sql");
-		insertPlayerQuery = sqlFileToString("insert_player.sql");
 		insertPairwiseQuery = sqlFileToString("insert_pairwise.sql");
-		config = ServerConfig.getInstance(Paths.get("config.json"));
+		selectPairwiseQuery = sqlFileToString("select_pairwise.sql");
+		this.config = config;
 
 	}
 
@@ -98,26 +97,27 @@ class Database {
 		}
 	}
 
-	public Iterable<Match> createBestMatches() throws SQLException, IOException, InvalidRemoteException,
+	public Iterable<MatchTemplate> createBestMatches() throws SQLException, IOException, InvalidRemoteException,
 			TransportException, GitAPIException, MavenInvocationException, CommandLineException {
+
+		logger.info("Creating next matches");
 
 		Division division = randomElement(Division.values());
 
-		int randomType = ThreadLocalRandom.current().nextInt(7);
+		int randomType = ThreadLocalRandom.current().nextInt(17);
 		MatchType type;
-		if (randomType < 3)
+		if (randomType < 12)
 			type = MatchType.DUEL;
-		else if (randomType < 6)
+		else if (randomType < 16)
 			type = MatchType.FREE_FOR_ALL;
 		else
 			type = MatchType.TEAM;
 
 		List<Competitor> competitors = new ArrayList<>();
 
-		Authentication dbAuth = config.getDatabase();
-		try (Connection connection = DriverManager.getConnection(url, dbAuth.getUsername(), dbAuth.getPassword())) {
+		try (Connection connection = connect()) {
 
-			String query = "SELECT id, username, repo FROM competitor WHERE division_id <= ?";
+			String query = "SELECT id, username FROM competitor WHERE division_id <= ?";
 			try (PreparedStatement statement = connection.prepareStatement(query)) {
 				statement.setInt(1, division.getId());
 
@@ -166,34 +166,27 @@ class Database {
 
 		}
 
-		List<Match> matches = new LinkedList<>();
+		Map<Competitor, Integer> versionIds = new HashMap<>();
+		List<MatchTemplate> templates = new LinkedList<>();
 
-		try (Connection connection = DriverManager.getConnection(url, dbAuth.getUsername(), dbAuth.getPassword())) {
+		try (Connection connection = connect()) {
+
+			for (Competitor competitor : competitors)
+				versionIds.put(competitor, getVersionId(connection, competitor.getId(), versionNames.get(competitor)));
 
 			for (Set<Set<Competitor>> matchGrouping : matchGroupings) {
 
 				FieldState field = new FieldGenerator(type).get();
 				Map<Character, Competitor> assignment = assignCompetitors(field, matchGrouping);
-				Map<Character, Integer> versionIds = new HashMap<>();
-				for (Entry<Character, Competitor> entry : assignment.entrySet()) {
-					Competitor competitor = entry.getValue();
-					int versionId = getVersionId(connection, competitor.getId(), versionNames.get(competitor));
-					versionIds.put(entry.getKey(), versionId);
-				}
-				int matchId = addPlaceholderMatch(connection, field, versionIds::get);
-				String matchName = getMatchName(matchId);
-				Path matchFolder = dataFolder.resolve(matchName);
-				Map<Character, Controller> controllers = new HashMap<>();
-				for (Entry<Character, Competitor> entry : assignment.entrySet())
-					controllers.put(entry.getKey(), createController(matchFolder, entry.getValue()));
-				matches.add(new Match(matchId, field, controllers::get, new DefaultTurnRunner(), f -> {
-				}));
+				int matchId = addPlaceholderMatch(connection, field, c -> versionIds.get(assignment.get(c)));
+				MatchTemplate template = new MatchTemplate(matchId, field, assignment::get);
+				templates.add(template);
 
 			}
 
 		}
 
-		return matches;
+		return templates;
 
 	}
 
@@ -214,14 +207,17 @@ class Database {
 
 		int matchId;
 
-		try (PreparedStatement statement = connection.prepareStatement(insertMatchQuery)) {
+		String update = "INSERT INTO game_match (type_id, is_finished) VALUES (?, false)";
+		try (PreparedStatement statement = connection.prepareStatement(update)) {
 			statement.setInt(1, field.getMatchType().getNumberOfPlayers());
+			statement.executeUpdate();
+		}
 
+		try (PreparedStatement statement = connection.prepareStatement("SELECT LAST_INSERT_ID()")) {
 			try (ResultSet result = statement.executeQuery()) {
 				result.next();
 				matchId = result.getInt(1);
 			}
-
 		}
 
 		for (TeamState team : field.getTeamStates())
@@ -234,11 +230,16 @@ class Database {
 	private void addPlaceholderTeam(Connection connection, int matchNumber, TeamState team,
 			CharFunction<Integer> versionIds) throws SQLException {
 
-		int teamId;
-
-		try (PreparedStatement statement = connection.prepareStatement(insertTeamQuery)) {
+		String update = "INSERT INTO team (match_id, symbol) VALUES (?, ?)";
+		try (PreparedStatement statement = connection.prepareStatement(update)) {
 			statement.setInt(1, matchNumber);
 			statement.setString(2, Character.toString(team.getSymbol()));
+			statement.executeUpdate();
+		}
+
+		int teamId;
+
+		try (PreparedStatement statement = connection.prepareStatement("SELECT LAST_INSERT_ID()")) {
 			try (ResultSet result = statement.executeQuery()) {
 				result.next();
 				teamId = result.getInt(1);
@@ -255,10 +256,15 @@ class Database {
 	private int addPlaceholderPlayer(Connection connection, int teamId, char symbol, int versionId)
 			throws SQLException {
 
-		try (PreparedStatement statement = connection.prepareStatement(insertPlayerQuery)) {
+		String update = "INSERT INTO player (team_id, symbol, version_id) VALUES (?, ?, ?)";
+		try (PreparedStatement statement = connection.prepareStatement(update)) {
 			statement.setInt(1, teamId);
 			statement.setString(2, Character.toString(symbol));
 			statement.setInt(3, versionId);
+			statement.executeUpdate();
+		}
+
+		try (PreparedStatement statement = connection.prepareStatement("SELECT LAST_INSERT_ID()")) {
 			try (ResultSet result = statement.executeQuery()) {
 				result.next();
 				return result.getInt(1);
@@ -270,31 +276,37 @@ class Database {
 	private String setupController(String username) throws InvalidRemoteException, TransportException, GitAPIException,
 			IOException, MavenInvocationException, CommandLineException {
 
-		Path localRepo = repoFolder.resolve(username);
+		Path localRepo = config.getRepoFolder().resolve(username);
 		Authentication gitAuth = config.getGit();
 		String gitUsername = gitAuth.getUsername();
 		String gitPassword = gitAuth.getPassword();
 		CredentialsProvider credentials = new UsernamePasswordCredentialsProvider(gitUsername, gitPassword);
 		if (Files.notExists(localRepo)) {
+			logger.log(Level.INFO, "Cloning repo: {0}", username);
 			CloneCommand clone = Git.cloneRepository();
-			String uri = "https://github.com/bitbrawl/foodfighter-" + username;
+			String uri = "https://github.com/fvoichick/foodfighter-" + username;
 			clone.setURI(uri).setDirectory(localRepo.toFile());
 			clone.setCredentialsProvider(credentials);
 			clone.call().close();
 		} else {
+			logger.log(Level.INFO, "Pulling repo: {0}", username);
 			PullResult pull;
-			try (Git git = new Git(new RepositoryBuilder().setGitDir(localRepo.toFile()).build())) {
-				pull = git.pull().setCredentialsProvider(credentials).call();
+			try (Git git = new Git(
+					new RepositoryBuilder().setWorkTree(localRepo.toFile()).setMustExist(true).setup().build())) {
+				pull = git.pull().setCredentialsProvider(credentials).setRemoteBranchName("master").call();
 			}
 			if (!pull.isSuccessful())
 				throw new IOException("Unsuccessful pull");
 		}
 
+		logger.log(Level.INFO, "Building project: {0}", username);
 		InvocationRequest request = new DefaultInvocationRequest();
 		request.setBaseDirectory(localRepo.toFile());
 		request.setPomFile(localRepo.resolve("pom.xml").toFile());
 		request.setGoals(Collections.singletonList("install"));
 		Invoker invoker = new DefaultInvoker();
+		invoker.setLogger(ServerInvokerLogger.INSTANCE);
+		invoker.setMavenHome(config.getMavenFolder().toFile());
 		InvocationResult result = invoker.execute(request);
 		CommandLineException exception = result.getExecutionException();
 		if (exception != null)
@@ -302,7 +314,7 @@ class Database {
 		if (result.getExitCode() != 0)
 			throw new IOException("Unsuccessful Maven install");
 
-		Path configPath = localRepo.resolve("config.json");
+		Path configPath = localRepo.resolve("src").resolve("main").resolve("resources").resolve("config.json");
 		CompetitorConfig config = CompetitorConfig.getInstance(configPath);
 		return config.getVersion().replaceAll("[^\\d\\.]", "");
 
@@ -313,8 +325,13 @@ class Database {
 		try (PreparedStatement statement = connection.prepareStatement(insertVersionQuery)) {
 			statement.setInt(1, competitorId);
 			statement.setString(2, versionName);
-			statement.setInt(3, competitorId);
-			statement.setString(4, versionName);
+			statement.executeUpdate();
+		}
+
+		String query = "SELECT id FROM competitor_version WHERE competitor_id = ? AND version_name = ?";
+		try (PreparedStatement statement = connection.prepareStatement(query)) {
+			statement.setInt(1, competitorId);
+			statement.setString(2, versionName);
 			try (ResultSet result = statement.executeQuery()) {
 				result.next();
 				return result.getInt("id");
@@ -323,21 +340,31 @@ class Database {
 
 	}
 
-	private Controller createController(Path matchFolder, Competitor competitor) throws IOException {
+	public JarController createController(Path matchFolder, Competitor competitor) throws IOException {
 
 		String username = competitor.getUsername();
-		Path localRepo = repoFolder.resolve(competitor.getUsername());
-		CompetitorConfig config = CompetitorConfig.getInstance(localRepo.resolve("config.json"));
+		Path localRepo = config.getRepoFolder().resolve(competitor.getUsername());
+		Path configPath = localRepo.resolve("src").resolve("main").resolve("resources").resolve("config.json");
+		CompetitorConfig competitorConfig = CompetitorConfig.getInstance(configPath);
 
-		Path jar = localRepo.resolve("target").resolve(username + "-1.0.0.jar");
-		Path log = Files.createFile(matchFolder.resolve(username + ".log"));
-		return new JarController(jar, config.getMainClass(), log);
+		Path jar = localRepo.resolve("target").resolve("foodfighter-" + username + "-0.1.0.jar");
+		Path log = matchFolder.resolve(username + ".log");
+		return new JarController(jar, competitorConfig.getMainClass(), log);
 
+	}
+
+	public Path getMatchFolder(int matchNumber) {
+		return config.getDataFolder().resolve(Match.getMatchName(matchNumber));
 	}
 
 	public boolean updateMatch(MatchHistory match) throws SQLException, IOException {
 
 		int matchId = match.getMatchNumber();
+		String matchName = Match.getMatchName(matchId);
+		logger.log(Level.INFO, "Updating {0}", matchName);
+
+		Path traceFile = getMatchFolder(matchId).resolve("trace.json");
+		writeTraceFile(match, traceFile);
 
 		uploadToS3(matchId);
 
@@ -345,8 +372,8 @@ class Database {
 
 		boolean shouldGenerate = false;
 
-		Authentication dbAuth = config.getDatabase();
-		try (Connection connection = DriverManager.getConnection(url, dbAuth.getUsername(), dbAuth.getPassword())) {
+		logger.info("Updating database");
+		try (Connection connection = connect()) {
 
 			Map<TeamState, Integer> teamIds = new HashMap<>();
 			for (TeamState team : finalState.getTeamStates())
@@ -357,24 +384,22 @@ class Database {
 				versionIds.put(team, selectVersionIds(connection, teamIds.get(team)));
 
 			for (TeamState team : finalState.getTeamStates()) {
-				int teamId = teamIds.get(team);
 				for (TeamState otherTeam : finalState.getTeamStates()) {
 					if (team.equals(otherTeam))
 						continue;
-					int otherTeamId = teamIds.get(otherTeam);
-					Set<Integer> versionsA = selectVersionIds(connection, teamId);
-					Set<Integer> versionsB = selectVersionIds(connection, otherTeamId);
+					Set<Integer> versionsA = versionIds.get(team);
+					Set<Integer> versionsB = versionIds.get(otherTeam);
 					boolean didWin = team.getScore().getTotalPoints() > otherTeam.getScore().getTotalPoints();
 					shouldGenerate |= addMatchResult(connection, match, versionsA, versionsB, didWin);
 				}
 			}
 
-			String videoStatus = shouldGenerate ? "generating" : "done";
-			String query = "UPDATE game_match SET is_finished = TRUE, video_status = ? WHERE id = ?";
-			try (PreparedStatement statement = connection.prepareStatement(query)) {
+			String videoStatus = shouldGenerate ? "generating" : "none";
+			String update = "UPDATE game_match SET is_finished = TRUE, video_status = ? WHERE id = ?";
+			try (PreparedStatement statement = connection.prepareStatement(update)) {
 				statement.setString(1, videoStatus);
 				statement.setInt(2, matchId);
-				statement.execute();
+				statement.executeUpdate();
 			}
 
 		}
@@ -383,37 +408,45 @@ class Database {
 
 	}
 
+	private void writeTraceFile(MatchHistory history, Path traceFile) {
+		try (Writer writer = Files.newBufferedWriter(traceFile, StandardOpenOption.CREATE_NEW)) {
+			gson.toJson(history, writer);
+		} catch (IOException e) {
+			logger.log(Level.SEVERE, "Unable to create trace file", e);
+		}
+	}
+
 	private void uploadToS3(int matchId) throws IOException {
 
-		Authentication awsAuth = config.getAws();
-		AWSCredentials credentials = new BasicAWSCredentials(awsAuth.getUsername(), awsAuth.getPassword());
-		AWSCredentialsProvider provider = new AWSStaticCredentialsProvider(credentials);
-		AmazonS3 s3Client = AmazonS3ClientBuilder.standard().withCredentials(provider).build();
+		String matchName = Match.getMatchName(matchId);
+		logger.log(Level.INFO, "Uploading to S3", matchName);
 
-		String matchName = getMatchName(matchId);
-		Path folder = dataFolder.resolve(matchName);
+		Path folder = config.getDataFolder().resolve(matchName);
 		Path traceFile = folder.resolve("trace.json");
-		String location = "foodfight/data";
-		uploadFile(s3Client, traceFile, location);
+		String location = "foodfight/data/" + matchName;
+		uploadFile(traceFile, location);
 		for (Path file : Files.newDirectoryStream(folder, "*.log"))
-			uploadFile(s3Client, file, location);
+			uploadFile(file, location);
 
 	}
 
 	private void uploadToYoutube(int matchId, Path videoFile) {
 
+		String matchName = Match.getMatchName(matchId);
+		logger.log(Level.INFO, "Uploading video", matchName);
+
 		// TODO upload to YouTube instead of S3
 
-		Authentication awsAuth = config.getAws();
-		AWSCredentials credentials = new BasicAWSCredentials(awsAuth.getUsername(), awsAuth.getPassword());
-		AWSCredentialsProvider provider = new AWSStaticCredentialsProvider(credentials);
-		AmazonS3 s3Client = AmazonS3ClientBuilder.standard().withCredentials(provider).build();
-
-		uploadFile(s3Client, videoFile, "foodfight/data");
+		uploadFile(videoFile, "foodfight/data/" + matchName);
 
 	}
 
-	private void uploadFile(AmazonS3 s3Client, Path file, String location) {
+	private void uploadFile(Path file, String location) {
+		Authentication awsAuth = config.getAws();
+		AWSCredentials credentials = new BasicAWSCredentials(awsAuth.getUsername(), awsAuth.getPassword());
+		AWSCredentialsProvider provider = new AWSStaticCredentialsProvider(credentials);
+		AmazonS3 s3Client = AmazonS3ClientBuilder.standard().withCredentials(provider).withRegion(Regions.US_EAST_2)
+				.build();
 		s3Client.putObject("data.bitbrawl.org", location + "/" + file.getFileName(), file.toFile());
 	}
 
@@ -428,15 +461,19 @@ class Database {
 		for (int version1 : versionsA)
 			for (int version2 : versionsB) {
 
-				int pairwiseId;
-
 				try (PreparedStatement statement = connection.prepareStatement(insertPairwiseQuery)) {
 					statement.setInt(1, typeId);
 					statement.setInt(2, version1);
 					statement.setInt(3, version2);
-					statement.setInt(4, typeId);
-					statement.setInt(5, version1);
-					statement.setInt(6, version2);
+					statement.executeUpdate();
+				}
+
+				int pairwiseId;
+
+				try (PreparedStatement statement = connection.prepareStatement(selectPairwiseQuery)) {
+					statement.setInt(1, typeId);
+					statement.setInt(2, version1);
+					statement.setInt(3, version2);
 					try (ResultSet result = statement.executeQuery()) {
 						result.next();
 						pairwiseId = result.getInt("id");
@@ -539,12 +576,13 @@ class Database {
 
 	}
 
-	public void addVideo(int matchId, Path videoFile) throws SQLException {
+	public void addVideo(int matchId) throws SQLException {
+
+		Path videoFile = config.getDataFolder().resolve(Match.getMatchName(matchId)).resolve("video.mp4");
 
 		uploadToYoutube(matchId, videoFile);
 
-		Authentication dbAuth = config.getDatabase();
-		try (Connection connection = DriverManager.getConnection(url, dbAuth.getUsername(), dbAuth.getPassword())) {
+		try (Connection connection = connect()) {
 
 			try (PreparedStatement statement = connection
 					.prepareStatement("UPDATE game_match SET video_status = 'done' WHERE id = ?")) {
@@ -555,8 +593,9 @@ class Database {
 		}
 	}
 
-	private String getMatchName(int matchId) {
-		return String.format("match-%06x", matchId);
+	private Connection connect() throws SQLException {
+		Authentication dbAuth = config.getDatabase();
+		return DriverManager.getConnection(config.getDatabaseUrl(), dbAuth.getUsername(), dbAuth.getPassword());
 	}
 
 	private static final <E> E randomElement(E[] array) {
@@ -570,6 +609,12 @@ class Database {
 		return set.subList(0, size);
 	}
 
+	private static final Gson gson = new GsonBuilder().enableComplexMapKeySerialization()
+			.registerTypeAdapter(ScoreState.class, ScoreState.Serializer.INSTANCE)
+			.registerTypeAdapter(InventoryState.class, InventoryState.Serializer.INSTANCE)
+			.registerTypeAdapter(Vector.class, Vector.Serializer.INSTANCE)
+			.registerTypeAdapter(Direction.class, Direction.Serializer.INSTANCE).setPrettyPrinting().create();
+	private static final Logger logger = EngineLogger.INSTANCE;
 	private static final BinomialTest test = new BinomialTest();
 	private static final double ALPHA_LEVEL = 0.1;
 

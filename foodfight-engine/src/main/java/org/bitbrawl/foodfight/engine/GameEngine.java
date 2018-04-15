@@ -15,7 +15,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -32,7 +31,6 @@ import org.bitbrawl.foodfight.engine.match.FieldGenerator;
 import org.bitbrawl.foodfight.engine.match.JarController;
 import org.bitbrawl.foodfight.engine.match.Match;
 import org.bitbrawl.foodfight.engine.match.MatchHistory;
-import org.bitbrawl.foodfight.engine.video.FrameGenerator;
 import org.bitbrawl.foodfight.engine.video.ImageEncoder;
 import org.bitbrawl.foodfight.field.MatchType;
 import org.bitbrawl.foodfight.field.Player;
@@ -129,73 +127,51 @@ public enum GameEngine {
 		Map<Character, Controller> controllers = new HashMap<>();
 		Map<Character, String> names = new HashMap<>();
 		Collection<JarController> jarsToClose = new LinkedList<>();
+
+		for (Player player : field.getPlayers()) {
+			char symbol = player.getSymbol();
+			ControllerConfig controllerConfig = controllerConfigs.remove();
+			names.put(symbol, controllerConfig.getName());
+			Path jar = controllerConfig.getJar();
+			String className = controllerConfig.getMainClass();
+			Path log = matchData.resolve("player-" + symbol + ".log");
+			Controller controller;
+			try {
+				JarController jarController = new JarController(jar, className, log);
+				jarsToClose.add(jarController);
+				controller = jarController;
+			} catch (IOException e) {
+				logger.log(Level.SEVERE, "Unable to create controller", e);
+				controller = (f, t, p) -> null;
+			}
+			controllers.put(symbol, controller);
+		}
+
+		logger.info("Running match");
+		Match match = new Match.Builder(matchNumber, field, controllers::get, new DefaultTurnRunner()).build();
+		MatchHistory history = match.run();
+
+		Path traceFile = matchData.resolve("trace.json");
+
+		logger.log(Level.INFO, "Writing match history to {0}", traceFile);
+
+		Gson gson = new GsonBuilder().enableComplexMapKeySerialization()
+				.registerTypeAdapter(ScoreState.class, ScoreState.Serializer.INSTANCE)
+				.registerTypeAdapter(InventoryState.class, InventoryState.Serializer.INSTANCE)
+				.registerTypeAdapter(Vector.class, Vector.Serializer.INSTANCE)
+				.registerTypeAdapter(Direction.class, Direction.Serializer.INSTANCE).setPrettyPrinting().create();
+		try (Writer writer = Files.newBufferedWriter(traceFile, StandardOpenOption.CREATE_NEW)) {
+			gson.toJson(history, writer);
+		} catch (IOException e) {
+			logger.log(Level.SEVERE, "Unable to create trace file", e);
+		}
+
+		logger.info("Generating video");
+
 		try {
-			for (Player player : field.getPlayers()) {
-				char symbol = player.getSymbol();
-				ControllerConfig controllerConfig = controllerConfigs.remove();
-				names.put(symbol, controllerConfig.getName());
-				Path jar = controllerConfig.getJar();
-				String className = controllerConfig.getMainClass();
-				Path log = matchData.resolve("player-" + symbol + ".log");
-				Controller controller;
-				try {
-					JarController jarController = new JarController(jar, className, log);
-					jarsToClose.add(jarController);
-					controller = jarController;
-				} catch (IOException e) {
-					logger.log(Level.SEVERE, "Unable to create controller", e);
-					controller = (f, t, p) -> null;
-				}
-				controllers.put(symbol, controller);
-			}
-
-			FrameGenerator generator = new FrameGenerator(field, names::get);
-			Consumer<FieldState> videoConsumer;
-			ImageEncoder encoder = null;
-			try {
-				encoder = new ImageEncoder(matchData.resolve("video.mp4"));
-				ImageEncoder encCopy = encoder;
-				videoConsumer = state -> encCopy.encode(generator.apply(state));
-			} catch (IOException e) {
-				logger.log(Level.SEVERE, "Unable to generate video file", e);
-				videoConsumer = state -> {
-				};
-			}
-
-			logger.info("Running match");
-			// TODO move video generation later
-
-			MatchHistory history;
-			try {
-				Match match = new Match(matchNumber, field, controllers::get, new DefaultTurnRunner(), videoConsumer);
-				history = match.run();
-			} finally {
-				if (encoder != null)
-					try {
-						encoder.close();
-					} catch (IOException e) {
-						logger.log(Level.SEVERE, "Unable to finish generating video file", e);
-					}
-			}
-
-			Path traceFile = matchData.resolve("trace.json");
-
-			logger.log(Level.INFO, "Writing match history to {0}", traceFile);
-
-			Gson gson = new GsonBuilder().enableComplexMapKeySerialization()
-					.registerTypeAdapter(ScoreState.class, ScoreState.Serializer.INSTANCE)
-					.registerTypeAdapter(InventoryState.class, InventoryState.Serializer.INSTANCE)
-					.registerTypeAdapter(Vector.class, Vector.Serializer.INSTANCE)
-					.registerTypeAdapter(Direction.class, Direction.Serializer.INSTANCE).setPrettyPrinting().create();
-			try (Writer writer = Files.newBufferedWriter(traceFile, StandardOpenOption.CREATE_NEW)) {
-				gson.toJson(history, writer);
-			} catch (IOException e) {
-				logger.log(Level.SEVERE, "Unable to create trace file", e);
-			}
-
-		} finally {
-			for (JarController jar : jarsToClose)
-				jar.close();
+			ImageEncoder.encode(history, names::get, matchData.resolve("video.mp4"));
+		} catch (IOException e) {
+			logger.log(Level.SEVERE, "Unable to generate video", e);
 		}
 
 	}

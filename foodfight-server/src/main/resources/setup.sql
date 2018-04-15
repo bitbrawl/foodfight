@@ -1,8 +1,8 @@
-DROP DATABASE IF EXISTS BITBRAWL;
+DROP DATABASE IF EXISTS bitbrawl;
 
-CREATE DATABASE BITBRAWL;
+CREATE DATABASE bitbrawl;
 
-USE BITBRAWL;
+USE bitbrawl;
 
 CREATE TABLE division
   (
@@ -127,7 +127,7 @@ CREATE TABLE team
      id       MEDIUMINT UNSIGNED NOT NULL AUTO_INCREMENT,
      match_id MEDIUMINT UNSIGNED NOT NULL,
      symbol   CHAR(1) NOT NULL,
-     points   MEDIUMINT UNSIGNED,
+     points   MEDIUMINT,
      PRIMARY KEY(id),
      UNIQUE(match_id, symbol),
      UNIQUE(match_id, points)

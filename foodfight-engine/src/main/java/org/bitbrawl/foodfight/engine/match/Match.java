@@ -6,18 +6,14 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.logging.Level;
 
 import org.bitbrawl.foodfight.controller.Controller;
 import org.bitbrawl.foodfight.controller.Controller.Action;
 import org.bitbrawl.foodfight.engine.field.DynamicField;
 import org.bitbrawl.foodfight.engine.field.DynamicPlayer;
 import org.bitbrawl.foodfight.engine.field.FieldState;
-import org.bitbrawl.foodfight.engine.logging.EngineLogger;
 import org.bitbrawl.foodfight.field.Field;
 
 public final class Match {
@@ -27,24 +23,50 @@ public final class Match {
 	private final DynamicField field;
 	private final List<FieldState> fieldStates = new ArrayList<>(Field.TOTAL_TURNS + 1);
 	private final TurnRunner turnRunner;
-	private final Consumer<FieldState> videoConsumer;
+	private final Consumer<FieldState> uiConsumer;
 
-	public Match(int number, FieldState field, CharFunction<? extends Controller> controllers,
-			TurnRunner turnRunner, Consumer<FieldState> videoConsumer) {
-		Objects.requireNonNull(field, "field cannot be null");
-		Objects.requireNonNull(controllers, "controllers cannot be null");
+	public final static class Builder {
 
-		this.number = number;
-		this.field = new DynamicField(field);
-		this.videoConsumer = videoConsumer.andThen(fieldStates::add);
+		private final int number;
+		private final FieldState field;
+		private final CharFunction<? extends Controller> controllers;
+		private final TurnRunner turnRunner;
+		private Consumer<FieldState> uiConsumer = f -> {
+		};
 
-		for (DynamicPlayer player : this.field.getDynamicPlayers())
-			this.controllers.put(controllers.apply(player.getSymbol()), player);
+		public Builder(int number, FieldState field, CharFunction<? extends Controller> controllers,
+				TurnRunner turnRunner) {
+			this.number = number;
+			this.field = field;
+			this.controllers = controllers;
+			this.turnRunner = turnRunner;
+		}
 
-		this.turnRunner = turnRunner;
+		public Builder uiConsumer(Consumer<FieldState> val) {
+			this.uiConsumer = val;
+			return this;
+		}
 
-		this.field.update(new FieldState(field.getTurnNumber() + 1, field.getMatchType(), field.getTeamStates(),
-				field.getFoodStates(), field.getCollisionStates()));
+		public Match build() {
+			return new Match(this);
+		}
+
+	}
+
+	private Match(Builder builder) {
+
+		number = builder.number;
+		field = new DynamicField(builder.field);
+
+		for (DynamicPlayer player : field.getDynamicPlayers())
+			controllers.put(builder.controllers.apply(player.getSymbol()), player);
+
+		turnRunner = builder.turnRunner;
+
+		uiConsumer = builder.uiConsumer.andThen(fieldStates::add);
+
+		field.update(new FieldState(field.getTurnNumber() + 1, field.getMatchType(), builder.field.getTeamStates(),
+				builder.field.getFoodStates(), builder.field.getCollisionStates()));
 
 	}
 
@@ -80,11 +102,11 @@ public final class Match {
 	}
 
 	private void addFrame() {
-		try {
-			videoConsumer.accept(field.getState());
-		} catch (Throwable t) {
-			EngineLogger.INSTANCE.log(Level.WARNING, "Unable to add video frame", t);
-		}
+		uiConsumer.accept(field.getState());
+	}
+
+	public static String getMatchName(int matchNumber) {
+		return String.format("match-%06x", matchNumber);
 	}
 
 }

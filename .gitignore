@@ -4,5 +4,8 @@
 target
 config.json
 data
-foodfight-engine/foodfight-runner-0.1.0-jar-with-dependencies.jar
+*.jar
 foodfight-engine/players
+foodfight-server/test-data
+foodfight-server/test-repos
+foodfight-server/config.json

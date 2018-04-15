@@ -28,7 +28,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonIOException;
 import com.google.gson.stream.JsonReader;
 
-public final class JarController implements Controller, AutoCloseable {
+public final class JarController implements Controller {
 
 	private final Gson gson = new GsonBuilder().enableComplexMapKeySerialization()
 			.registerTypeAdapter(ScoreState.class, ScoreState.Serializer.INSTANCE)
@@ -77,37 +77,10 @@ public final class JarController implements Controller, AutoCloseable {
 			return result;
 		} catch (IOException | JsonIOException e) {
 			EngineLogger.INSTANCE.log(Level.SEVERE, "Problem communicating with controller", e);
-			close();
+			isClosed = true;
 			return null;
 		}
 
-	}
-
-	@Override
-	public void close() {
-		isClosed = true;
-		try {
-			try {
-				try {
-					jsonReader.close();
-				} finally {
-					try {
-						reader.close();
-					} finally {
-						inReader.close();
-					}
-				}
-			} finally {
-				try {
-					writer.close();
-				} finally {
-					outWriter.close();
-				}
-			}
-		} catch (IOException ignore) {
-		} finally {
-			process.destroy();
-		}
 	}
 
 	public Path getLog() {

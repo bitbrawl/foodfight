@@ -60,8 +60,9 @@ public final class DebugMatchRunner {
 
 		FrameGenerator generator = new FrameGenerator(field, c -> controllers.get(c).getClass().getSimpleName());
 		ImageFrame frame = new ImageFrame(generator.apply(field));
-		MatchHistory history = new Match(0, field, controllers::get, new DefaultTurnRunner(),
-				state -> frame.updateImage(generator.apply(state))).run();
+		Match match = new Match.Builder(0, field, controllers::get, new DefaultTurnRunner())
+				.uiConsumer(state -> frame.updateImage(generator.apply(state))).build();
+		MatchHistory history = match.run();
 
 	}
 

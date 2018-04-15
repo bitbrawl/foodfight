@@ -4,6 +4,12 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.function.Function;
+
+import org.bitbrawl.foodfight.engine.field.FieldState;
+import org.bitbrawl.foodfight.engine.match.CharFunction;
+import org.bitbrawl.foodfight.engine.match.MatchHistory;
 
 import io.humble.video.Codec;
 import io.humble.video.Encoder;
@@ -84,6 +90,16 @@ public final class ImageEncoder implements AutoCloseable {
 
 		Files.move(unfinished, videoFile);
 
+	}
+
+	public static void encode(MatchHistory history, CharFunction<String> names, Path location)
+			throws IOException, InterruptedException {
+		List<FieldState> states = history.getFieldStates();
+		Function<FieldState, BufferedImage> generator = new FrameGenerator(states.get(0), names);
+		try (ImageEncoder encoder = new ImageEncoder(location)) {
+			for (FieldState state : states)
+				encoder.encode(generator.apply(state));
+		}
 	}
 
 	private static final int FRAMERATE = 30;
