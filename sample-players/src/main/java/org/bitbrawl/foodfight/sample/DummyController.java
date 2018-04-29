@@ -2,8 +2,8 @@ package org.bitbrawl.foodfight.sample;
 
 import org.bitbrawl.foodfight.controller.JavaController;
 import org.bitbrawl.foodfight.engine.match.DebugMatchRunner;
-import org.bitbrawl.foodfight.engine.match.Match;
 import org.bitbrawl.foodfight.field.Field;
+import org.bitbrawl.foodfight.field.MatchType;
 import org.bitbrawl.foodfight.field.Player;
 import org.bitbrawl.foodfight.field.Team;
 
@@ -15,7 +15,7 @@ public final class DummyController extends JavaController {
 	}
 
 	public static void main(String[] args) {
-		DebugMatchRunner.runDebugMatch(Match.Type.DUEL, DummyController.class, RandomController.class);
+		DebugMatchRunner.runDebugMatch(MatchType.DUEL, DummyController.class, RandomController.class);
 	}
 
 }

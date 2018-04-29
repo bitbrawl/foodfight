@@ -4,8 +4,8 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import org.bitbrawl.foodfight.controller.JavaController;
 import org.bitbrawl.foodfight.engine.match.DebugMatchRunner;
-import org.bitbrawl.foodfight.engine.match.Match;
 import org.bitbrawl.foodfight.field.Field;
+import org.bitbrawl.foodfight.field.MatchType;
 import org.bitbrawl.foodfight.field.Player;
 import org.bitbrawl.foodfight.field.Team;
 import org.bitbrawl.foodfight.util.PlayerUtils;
@@ -34,7 +34,7 @@ public final class WallsController extends JavaController {
 	}
 
 	public static void main(String[] args) {
-		DebugMatchRunner.runDebugMatch(Match.Type.TEAM, DummyController.class, RandomController.class,
+		DebugMatchRunner.runDebugMatch(MatchType.TEAM, DummyController.class, RandomController.class,
 				HidingController.class, WallsController.class);
 	}
 

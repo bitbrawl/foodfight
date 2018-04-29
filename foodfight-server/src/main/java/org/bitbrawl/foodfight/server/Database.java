@@ -16,6 +16,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -76,14 +77,18 @@ import com.google.gson.GsonBuilder;
 
 class Database {
 
-	private final String insertVersionQuery, insertPairwiseQuery, selectPairwiseQuery;
+	private final String insertVersionQuery, insertPairwiseQuery, selectPairingResultsQuery, selectPairwiseQuery,
+			selectResultsQuery, updateScoreQuery;
 	private final ServerConfig config;
 
 	public Database(ServerConfig config) throws IOException {
 
 		insertVersionQuery = sqlFileToString("insert_version.sql");
 		insertPairwiseQuery = sqlFileToString("insert_pairwise.sql");
+		selectPairingResultsQuery = sqlFileToString("select_pairing_results.sql");
 		selectPairwiseQuery = sqlFileToString("select_pairwise.sql");
+		selectResultsQuery = sqlFileToString("select_results.sql");
+		updateScoreQuery = sqlFileToString("update_score.sql");
 		this.config = config;
 
 	}
@@ -322,21 +327,45 @@ class Database {
 
 	private int getVersionId(Connection connection, int competitorId, String versionName) throws SQLException {
 
-		try (PreparedStatement statement = connection.prepareStatement(insertVersionQuery)) {
-			statement.setInt(1, competitorId);
-			statement.setString(2, versionName);
-			statement.executeUpdate();
-		}
+		int versionId = -1;
 
 		String query = "SELECT id FROM competitor_version WHERE competitor_id = ? AND version_name = ?";
 		try (PreparedStatement statement = connection.prepareStatement(query)) {
 			statement.setInt(1, competitorId);
 			statement.setString(2, versionName);
 			try (ResultSet result = statement.executeQuery()) {
-				result.next();
-				return result.getInt("id");
+				if (result.next())
+					versionId = result.getInt("id");
 			}
 		}
+
+		if (versionId < 0) {
+
+			try (PreparedStatement statement = connection.prepareStatement(insertVersionQuery)) {
+				statement.setInt(1, competitorId);
+				statement.setString(2, versionName);
+				statement.executeUpdate();
+			}
+
+			try (PreparedStatement statement = connection.prepareStatement(query)) {
+				statement.setInt(1, competitorId);
+				statement.setString(2, versionName);
+				try (ResultSet result = statement.executeQuery()) {
+					result.next();
+					versionId = result.getInt("id");
+				}
+			}
+
+		}
+
+		String update = "UPDATE competitor SET version_id = ? WHERE id = ?";
+		try (PreparedStatement statement = connection.prepareStatement(update)) {
+			statement.setInt(1, versionId);
+			statement.setInt(2, competitorId);
+			statement.executeUpdate();
+		}
+
+		return versionId;
 
 	}
 
@@ -393,6 +422,24 @@ class Database {
 					shouldGenerate |= addMatchResult(connection, match, versionsA, versionsB, didWin);
 				}
 			}
+
+			List<Integer> competitorIds = new LinkedList<>();
+			for (Set<Integer> teamVersionIds : versionIds.values()) {
+				for (int versionId : teamVersionIds) {
+					String query = "SELECT id FROM competitor WHERE version_id = ?";
+					try (PreparedStatement statement = connection.prepareStatement(query)) {
+						statement.setInt(1, versionId);
+						try (ResultSet result = statement.executeQuery()) {
+							result.next();
+							competitorIds.add(result.getInt("id"));
+						}
+					}
+				}
+			}
+
+			MatchType type = finalState.getMatchType();
+			for (int id : competitorIds)
+				updateScore(connection, id, type);
 
 			String videoStatus = shouldGenerate ? "generating" : "none";
 			String update = "UPDATE game_match SET is_finished = TRUE, video_status = ? WHERE id = ?";
@@ -461,23 +508,38 @@ class Database {
 		for (int version1 : versionsA)
 			for (int version2 : versionsB) {
 
-				try (PreparedStatement statement = connection.prepareStatement(insertPairwiseQuery)) {
-					statement.setInt(1, typeId);
-					statement.setInt(2, version1);
-					statement.setInt(3, version2);
-					statement.executeUpdate();
-				}
-
-				int pairwiseId;
+				int pairwiseId = -1;
 
 				try (PreparedStatement statement = connection.prepareStatement(selectPairwiseQuery)) {
 					statement.setInt(1, typeId);
 					statement.setInt(2, version1);
 					statement.setInt(3, version2);
 					try (ResultSet result = statement.executeQuery()) {
-						result.next();
+						if (result.next())
+							;
 						pairwiseId = result.getInt("id");
 					}
+				}
+
+				if (pairwiseId < 0) {
+
+					try (PreparedStatement statement = connection.prepareStatement(insertPairwiseQuery)) {
+						statement.setInt(1, typeId);
+						statement.setInt(2, version1);
+						statement.setInt(3, version2);
+						statement.executeUpdate();
+					}
+
+					try (PreparedStatement statement = connection.prepareStatement(selectPairwiseQuery)) {
+						statement.setInt(1, typeId);
+						statement.setInt(2, version1);
+						statement.setInt(3, version2);
+						try (ResultSet result = statement.executeQuery()) {
+							result.next();
+							pairwiseId = result.getInt("id");
+						}
+					}
+
 				}
 
 				String sql = "INSERT INTO match_result (match_id, pairwise_result_id, did_win) VALUES (?, ?, ?)";
@@ -576,6 +638,93 @@ class Database {
 
 	}
 
+	private void updateScore(Connection connection, int competitorId, MatchType type) throws SQLException {
+
+		int competitorDivisionId;
+		String query = "SELECT division_id FROM competitor WHERE competitor.id = ?";
+		try (PreparedStatement statement = connection.prepareStatement(query)) {
+			statement.setInt(1, competitorId);
+			try (ResultSet result = statement.executeQuery()) {
+				result.next();
+				competitorDivisionId = result.getInt("division_id");
+			}
+		}
+
+		int typeId = type.getNumberOfPlayers();
+
+		Map<Division, CompetitorScore> scores = new EnumMap<>(Division.class);
+
+		try (PreparedStatement statement = connection.prepareStatement(selectResultsQuery)) {
+			statement.setInt(1, competitorId);
+			statement.setInt(2, typeId);
+
+			try (ResultSet result = statement.executeQuery()) {
+				while (result.next()) {
+					Division division = Division.byId(result.getInt("division_id"));
+					CompetitorScore score = scores.computeIfAbsent(division, CompetitorScore::new);
+					score.addResult(MatchResult.byName(result.getString("result")), result.getInt(3));
+				}
+			}
+
+		}
+
+		for (CompetitorScore score : scores.values()) {
+			try (PreparedStatement statement = connection.prepareStatement(updateScoreQuery)) {
+				statement.setInt(1, score.getDivision().getId());
+				statement.setInt(2, typeId);
+				statement.setInt(3, competitorId);
+				statement.setInt(4, score.getCount(MatchResult.WIN));
+				statement.setInt(5, score.getCount(MatchResult.TIE));
+				statement.setInt(6, score.getCount(MatchResult.LOSS));
+				statement.setInt(7, score.getScore());
+				statement.executeUpdate();
+			}
+		}
+
+		for (int competingDivisionId = competitorDivisionId; competingDivisionId <= 3; competingDivisionId++) {
+
+			Map<Integer, Map<MatchResult, Integer>> resultCounts = new HashMap<>();
+
+			try (PreparedStatement statement = connection.prepareStatement(selectPairingResultsQuery)) {
+				statement.setInt(1, competitorId);
+				statement.setInt(2, competingDivisionId);
+
+				try (ResultSet result = statement.executeQuery()) {
+					while (result.next()) {
+						resultCounts.computeIfAbsent(result.getInt("second_competitor_id"), i -> {
+							return new EnumMap<>(MatchResult.class);
+						}).put(MatchResult.byName(result.getString("result")), result.getInt(3));
+					}
+				}
+
+			}
+
+			CompetitorScore score = new CompetitorScore(Division.byId(competingDivisionId));
+			for (Map<MatchResult, Integer> resultCount : resultCounts.values()) {
+				int wins = resultCount.getOrDefault(MatchResult.WIN, 0);
+				int winsMinusLosses = wins - resultCount.getOrDefault(MatchResult.LOSS, 0);
+				if (winsMinusLosses > 0)
+					score.addResult(MatchResult.WIN, 1);
+				else if (winsMinusLosses < 0)
+					score.addResult(MatchResult.LOSS, 1);
+				else
+					score.addResult(MatchResult.TIE, 1);
+			}
+
+			try (PreparedStatement statement = connection.prepareStatement(updateScoreQuery)) {
+				statement.setInt(1, competingDivisionId);
+				statement.setInt(2, 0);
+				statement.setInt(3, competitorId);
+				statement.setInt(4, score.getCount(MatchResult.WIN));
+				statement.setInt(5, score.getCount(MatchResult.TIE));
+				statement.setInt(6, score.getCount(MatchResult.LOSS));
+				statement.setInt(7, score.getScore());
+				statement.execute();
+			}
+		}
+
+	}
+
 	public void addVideo(int matchId) throws SQLException {
 
 		Path videoFile = config.getDataFolder().resolve(Match.getMatchName(matchId)).resolve("video.mp4");
@@ -584,10 +733,10 @@ class Database {
 
 		try (Connection connection = connect()) {
 
-			try (PreparedStatement statement = connection
-					.prepareStatement("UPDATE game_match SET video_status = 'done' WHERE id = ?")) {
+			String update = "UPDATE game_match SET video_status = 'done' WHERE id = ?";
+			try (PreparedStatement statement = connection.prepareStatement(update)) {
 				statement.setInt(1, matchId);
-				statement.execute();
+				statement.executeUpdate();
 			}
 
 		}

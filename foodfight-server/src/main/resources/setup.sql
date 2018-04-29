@@ -76,19 +76,19 @@ ENGINE = INNODB
 DEFAULT CHARACTER SET = UTF8
 COLLATE = UTF8_GENERAL_CI;
 
-CREATE TABLE version_score
+CREATE TABLE competitor_score
   (
      division_id TINYINT UNSIGNED NOT NULL,
      type_id     TINYINT UNSIGNED NOT NULL,
-     version_id  MEDIUMINT UNSIGNED NOT NULL,
+     competitor_id  SMALLINT UNSIGNED NOT NULL,
      wins        MEDIUMINT NOT NULL DEFAULT 0,
      ties        MEDIUMINT NOT NULL DEFAULT 0,
      losses      MEDIUMINT NOT NULL DEFAULT 0,
      score       MEDIUMINT NOT NULL DEFAULT 0,
-     PRIMARY KEY(division_id, type_id, version_id),
+     PRIMARY KEY(division_id, type_id, competitor_id),
      FOREIGN KEY(division_id) REFERENCES division(id),
      FOREIGN KEY(type_id) REFERENCES match_type(id),
-     FOREIGN KEY(version_id) REFERENCES competitor_version(id)
+     FOREIGN KEY(competitor_id) REFERENCES competitor(id)
   )
 ENGINE = INNODB
 DEFAULT CHARACTER SET = UTF8
