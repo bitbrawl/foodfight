@@ -1,6 +1,7 @@
 package org.bitbrawl.foodfight.engine.match;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
@@ -31,7 +32,6 @@ import org.bitbrawl.foodfight.field.Field;
 import org.bitbrawl.foodfight.field.Food;
 import org.bitbrawl.foodfight.field.Player;
 import org.bitbrawl.foodfight.util.Direction;
-import org.bitbrawl.foodfight.util.FoodComparator;
 import org.bitbrawl.foodfight.util.PlayerComparator;
 import org.bitbrawl.foodfight.util.PlayerUtils;
 import org.bitbrawl.foodfight.util.Vector;
@@ -57,8 +57,8 @@ public final class DefaultTurnRunner implements TurnRunner {
 		if (field.getTurnNumber() >= Field.TOTAL_TURNS)
 			field = breakTies(field);
 
-		return new FieldState(field.getTurnNumber() + 1, field.getMatchType(), field.getTeamStates(),
-				field.getFoodStates(), field.getCollisionStates());
+		return new FieldState(field.getTurnNumber() + 1, field.getMatchType(), field.getTeamStates(), spawnFood(field),
+				field.getCollisionStates());
 
 	}
 
@@ -239,31 +239,6 @@ public final class DefaultTurnRunner implements TurnRunner {
 
 			}
 
-		for (FoodState food : field.getFoodStates()) {
-			if (food.getHeight() <= 0.0)
-				continue;
-
-			Vector foodLocation = food.getLocation();
-			double foodRadius = food.getType().getRadius();
-
-			for (FoodState other : field.getFoodStates()) {
-				if (other.getHeight() <= 0 || FoodComparator.INSTANCE.compare(food, other) >= 0)
-					continue;
-
-				Vector otherLocation = other.getLocation();
-				double otherRadius = other.getType().getRadius();
-				double collisionDistance = foodRadius + otherRadius;
-
-				if (foodLocation.subtract(otherLocation).getMagnitude() < collisionDistance) {
-					Vector collisionLocation = foodLocation.multiply(otherRadius)
-							.add(otherLocation.multiply(Player.COLLISION_RADIUS).divide(collisionDistance));
-					collisions.add(new CollisionState(collisionLocation, 0.0));
-				}
-
-			}
-
-		}
-
 		Map<PlayerState, Vector> knockbacks = new HashMap<>();
 		Set<FoodState> remainingFood = new LinkedHashSet<>(field.getFoodStates());
 
@@ -345,6 +320,51 @@ public final class DefaultTurnRunner implements TurnRunner {
 
 	}
 
+	private Set<FoodState> spawnFood(FieldState field) {
+		Set<FoodState> fieldFood = field.getFoodStates();
+		Set<Food.Type> availableTypes = EnumSet.allOf(Food.Type.class);
+		for (FoodState food : fieldFood)
+			availableTypes.remove(food.getType());
+		for (TeamState team : field.getTeamStates()) {
+			availableTypes.removeAll(team.getTable().getFood());
+			for (PlayerState player : team.getPlayerStates())
+				for (Player.Hand hand : Player.Hand.values()) {
+					Food.Type type = player.getInventory().get(hand);
+					if (type != null)
+						availableTypes.remove(type);
+				}
+		}
+		if (availableTypes.size() <= 4 || ThreadLocalRandom.current().nextDouble() >= Food.RESPAWN_RATE)
+			return fieldFood;
+		Food.Type type = randomElementFrom(availableTypes);
+		double radius = type.getRadius();
+		outer: while (true) {
+			double x = ThreadLocalRandom.current().nextDouble(radius, Field.WIDTH - radius);
+			double y = ThreadLocalRandom.current().nextDouble(radius, Field.DEPTH - radius);
+			Vector newLocation = Vector.cartesian(x, y);
+			for (PlayerState player : field.getPlayerStates()) {
+				double distance = player.getLocation().subtract(newLocation).getMagnitude();
+				if (distance < Player.COLLISION_RADIUS + radius)
+					continue outer;
+			}
+			for (FoodState food : field.getFoodStates()) {
+				double distance = food.getLocation().subtract(newLocation).getMagnitude();
+				if (distance < food.getType().getRadius() + radius)
+					continue outer;
+			}
+			for (TeamState team : field.getTeamStates()) {
+				TableState table = team.getTable();
+				if (table.getEdge(Direction.WEST) < x && x < table.getEdge(Direction.EAST))
+					continue outer;
+				if (table.getEdge(Direction.SOUTH) < y && y < table.getEdge(Direction.NORTH))
+					continue outer;
+			}
+			Set<FoodState> result = new LinkedHashSet<>(fieldFood);
+			result.add(new FoodState(type, newLocation, 0, Direction.NORTH));
+			return result;
+		}
+	}
+
 	private FieldState breakTies(FieldState field) {
 
 		Set<TeamState> teams = field.getTeamStates();
@@ -417,6 +437,13 @@ public final class DefaultTurnRunner implements TurnRunner {
 		Set<FoodState> food = new LinkedHashSet<>(field.getFoodStates());
 		InventoryState inventory = player.getInventory();
 		double energy = player.getEnergy();
+		if (action != null && !action.equals(Action.DUCK) && !action.isEating()) {
+			energy -= Player.ENERGY_DECREMENT;
+			if (energy < 0.0)
+				energy = 0.0;
+		}
+
+		Map<Character, TableState> modifiedTables = new HashMap<>();
 
 		if (action != null)
 			if (action.isPickingUp()) {
@@ -426,8 +453,32 @@ public final class DefaultTurnRunner implements TurnRunner {
 				score = score.addEvent(Event.FIRST_PICKUP).addEvent(Event.EVERY_PICKUP);
 
 				FoodState piece = randomFoodPieceWithinReach(field, player, hand);
-				food.remove(piece);
-				inventory = inventory.add(hand, piece.getType());
+				if (piece == null) {
+					List<TeamState> tableTeams = new ArrayList<>();
+					List<Food.Type> types = new ArrayList<>();
+					for (TeamState otherTeam : field.getTeamStates()) {
+						TableState table = otherTeam.getTable();
+						if (PlayerUtils.isAgainstTable(player, table, true)) {
+							for (Food.Type type : table.getFood()) {
+								tableTeams.add(otherTeam);
+								types.add(type);
+							}
+						}
+					}
+					int randomIndex = ThreadLocalRandom.current().nextInt(tableTeams.size());
+					TeamState tableTeam = tableTeams.get(randomIndex);
+					TableState table = tableTeam.getTable();
+					Food.Type toRemove = types.get(randomIndex);
+					Set<Food.Type> newFood = EnumSet.noneOf(Food.Type.class);
+					newFood.addAll(table.getFood());
+					newFood.remove(toRemove);
+					TableState newTable = new TableState(table.getLocation(), newFood);
+					modifiedTables.put(tableTeam.getSymbol(), newTable);
+					inventory = inventory.add(hand, toRemove);
+				} else {
+					food.remove(piece);
+					inventory = inventory.add(hand, piece.getType());
+				}
 
 			} else if (action.isThrowing()) {
 
@@ -475,11 +526,19 @@ public final class DefaultTurnRunner implements TurnRunner {
 		team = new TeamState(team.getSymbol(), players, team.getTable(), score);
 
 		Set<TeamState> teams = new LinkedHashSet<>();
-		for (TeamState fieldTeam : field.getTeamStates())
+		for (TeamState fieldTeam : field.getTeamStates()) {
+			TeamState teamToAdd;
 			if (team.getSymbol() == fieldTeam.getSymbol())
-				teams.add(team);
+				teamToAdd = team;
 			else
-				teams.add(fieldTeam);
+				teamToAdd = fieldTeam;
+			char symbol = teamToAdd.getSymbol();
+			TableState changedTable = modifiedTables.get(symbol);
+			if (changedTable == null)
+				teams.add(teamToAdd);
+			else
+				teams.add(new TeamState(symbol, teamToAdd.getPlayerStates(), changedTable, teamToAdd.getScore()));
+		}
 
 		return new FieldState(field.getTurnNumber(), field.getMatchType(), teams, food, field.getCollisionStates());
 
@@ -548,9 +607,11 @@ public final class DefaultTurnRunner implements TurnRunner {
 			if (PlayerUtils.canPickup(player, food, hand))
 				options.add(food);
 
-		assert !options.isEmpty();
+		int size = options.size();
+		if (size == 0)
+			return null;
 
-		return options.get(ThreadLocalRandom.current().nextInt(options.size()));
+		return options.get(ThreadLocalRandom.current().nextInt(size));
 
 	}
 
@@ -647,6 +708,17 @@ public final class DefaultTurnRunner implements TurnRunner {
 		double newX = location.getX() + displacement.getX() * proportionOfVector;
 		return Vector.cartesian(newX, newY);
 
+	}
+
+	private static <E> E randomElementFrom(Collection<E> collection) {
+		assert collection != null;
+		assert !collection.isEmpty();
+		int index = ThreadLocalRandom.current().nextInt(collection.size());
+		int i = 0;
+		for (E element : collection)
+			if (i++ == index)
+				return element;
+		throw new AssertionError();
 	}
 
 }

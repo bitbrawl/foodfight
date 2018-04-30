@@ -9,10 +9,10 @@ import java.awt.image.BufferedImage;
 import java.awt.image.ColorModel;
 import java.awt.image.WritableRaster;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -92,7 +92,8 @@ public final class FrameGenerator implements Function<FieldState, BufferedImage>
 				graphics.setFont(new Font(Font.MONOSPACED, Font.BOLD, 50));
 				graphics.setColor(Color.BLACK);
 				FontMetrics metrics = graphics.getFontMetrics();
-				String playerTeamSymbol = team.getSymbol() + "" + player.getSymbol();
+				char playerSymbol = player.getSymbol();
+				String playerTeamSymbol = team.getSymbol() + "" + playerSymbol;
 				int characterAscent = metrics.getAscent();
 				int fontHeight = characterAscent + metrics.getDescent();
 				int characterWidth = metrics.stringWidth(playerTeamSymbol);
@@ -103,11 +104,9 @@ public final class FrameGenerator implements Function<FieldState, BufferedImage>
 				// player info text
 				graphics.setColor(Color.BLACK);
 				graphics.setFont(new Font(Font.MONOSPACED, Font.BOLD, 20));
-				// TODO write name
-				// int smallAscent = graphics.getFontMetrics().getAscent();
+				graphics.drawString(names.apply(player.getSymbol()), playerBoxStartX + 100, playerBoxStartY + 30);
 
 				// generating player images
-				char playerSymbol = player.getSymbol();
 				int imageNumber = imageNumbers.remove(0);
 				playerImages.put(playerSymbol, generatePlayerImage(imageNumber, teamHue));
 				profileImages.put(playerSymbol, generateProfileImage(imageNumber, teamHue));
@@ -212,12 +211,12 @@ public final class FrameGenerator implements Function<FieldState, BufferedImage>
 
 				graphics.setColor(Color.BLACK);
 				graphics.setFont(new Font(Font.MONOSPACED, Font.BOLD, 20));
-				FontMetrics metrics = graphics.getFontMetrics();
-				int ascent = metrics.getAscent();
+				// FontMetrics metrics = graphics.getFontMetrics();
+				// int ascent = metrics.getAscent();
 				String pointsText = "Points: " + team.getScore().getTotalPoints();
-				graphics.drawString(pointsText, playerBoxStartX + 100, playerBoxStartY + 10 + ascent);
+				graphics.drawString(pointsText, playerBoxStartX + 100, playerBoxStartY + 60);
 				String energyText = "Energy: " + Math.round(player.getEnergy());
-				graphics.drawString(energyText, playerBoxStartX + 100, playerBoxStartY + 20 + 2 * ascent);
+				graphics.drawString(energyText, playerBoxStartX + 10, playerBoxStartY + 110);
 
 				BufferedImage sideImage = getProfile(player);
 				int height = playerBoxStartY + PLAYER_FRAME_HEIGHT - sideImage.getHeight()
@@ -257,33 +256,35 @@ public final class FrameGenerator implements Function<FieldState, BufferedImage>
 
 	private static Map<Character, Float> generatePlayerColors(Set<? extends PlayerState> players, float teamColor) {
 
-		List<Float> colors = new LinkedList<>();
+		int numPlayers = players.size();
+		Float[] colors = new Float[numPlayers];
 
-		switch (players.size()) {
+		switch (numPlayers) {
 		case 1:
-			colors.add(teamColor);
+			colors[0] = teamColor;
 			break;
 
 		case 2:
 			float color = teamColor - 0.125F;
 			if (color < 0.0)
 				color += 1.0F;
-			colors.add(color);
+			colors[0] = color;
 			color = teamColor + 0.125F;
 			if (color >= 1.0)
 				color -= 1.0F;
-			colors.add(color);
+			colors[1] = color;
 			break;
 
 		default:
 			throw new IllegalArgumentException("Wrong number of players: " + players.size());
 		}
 
-		Collections.shuffle(colors, ThreadLocalRandom.current());
+		Collections.shuffle(Arrays.asList(colors), ThreadLocalRandom.current());
 
 		Map<Character, Float> result = new HashMap<>();
+		int i = 0;
 		for (PlayerState player : players)
-			result.put(player.getSymbol(), colors.get(colors.size() - 1));
+			result.put(player.getSymbol(), colors[i++]);
 
 		return result;
 

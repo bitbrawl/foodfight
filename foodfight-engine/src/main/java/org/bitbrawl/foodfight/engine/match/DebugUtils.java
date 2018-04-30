@@ -50,7 +50,9 @@ public final class DebugUtils {
 			Controller controller;
 			Class<? extends JavaController> clazz = allClasses.remove(allClasses.size() - 1);
 			try {
-				controller = JavaController.newInstance(clazz, playerLogger, clock);
+				@SuppressWarnings("deprecation")
+				Controller tempController = JavaController.newInstance(clazz, playerLogger, clock);
+				controller = tempController;
 			} catch (ControllerException e) {
 				EngineLogger.INSTANCE.log(Level.SEVERE, "Unable to instantiate new Controller", e);
 				controller = (f, t, p) -> null;

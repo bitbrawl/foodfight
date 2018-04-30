@@ -44,7 +44,7 @@ public final class PlayerUtils {
 				return false;
 			if (y >= Field.DEPTH - Player.COLLISION_RADIUS && heading.angle(Direction.NORTH) < halfPi)
 				return false;
-			if (isAgainstTable(field, player, true))
+			if (isAgainstAnyTable(field, player, true))
 				return false;
 			return true;
 		case MOVE_BACKWARD:
@@ -56,7 +56,7 @@ public final class PlayerUtils {
 				return false;
 			if (y >= Field.DEPTH - Player.COLLISION_RADIUS && heading.angle(Direction.NORTH) < halfPi)
 				return false;
-			if (isAgainstTable(field, player, false))
+			if (isAgainstAnyTable(field, player, false))
 				return false;
 			return true;
 		case PICKUP_LEFT:
@@ -65,14 +65,14 @@ public final class PlayerUtils {
 			for (Food food : field.getFood())
 				if (canPickup(player, food, Hand.LEFT))
 					return true;
-			return false;
+			return canPickupFromAnyTable(field, player);
 		case PICKUP_RIGHT:
 			if (inventory.get(Hand.RIGHT) != null)
 				return false;
 			for (Food food : field.getFood())
 				if (canPickup(player, food, Hand.RIGHT))
 					return true;
-			return false;
+			return canPickupFromAnyTable(field, player);
 		case THROW_LEFT:
 		case EAT_LEFT:
 			if (inventory.get(Hand.LEFT) == null)
@@ -111,6 +111,59 @@ public final class PlayerUtils {
 
 	}
 
+	public static boolean isAgainstTable(Player player, Table table, boolean movingForward) {
+
+		Vector location = player.getLocation();
+		double playerX = location.getX();
+		double playerY = location.getY();
+		Direction heading = player.getHeading();
+		double halfPi = Math.PI / 2.0;
+
+		boolean movingNorth, movingSouth, movingEast, movingWest;
+		if (movingForward) {
+			movingNorth = heading.angle(Direction.NORTH) < halfPi;
+			movingSouth = heading.angle(Direction.SOUTH) < halfPi;
+			movingEast = heading.angle(Direction.EAST) < halfPi;
+			movingWest = heading.angle(Direction.WEST) < halfPi;
+		} else {
+			movingNorth = heading.angle(Direction.NORTH) > halfPi;
+			movingSouth = heading.angle(Direction.SOUTH) > halfPi;
+			movingEast = heading.angle(Direction.EAST) > halfPi;
+			movingWest = heading.angle(Direction.WEST) > halfPi;
+		}
+
+		Vector tableLocation = table.getLocation();
+		double tableX = tableLocation.getX();
+		double tableY = tableLocation.getY();
+
+		double tableRadiusExtended = Table.RADIUS + Player.COLLISION_RADIUS;
+		double northEdge = tableY + tableRadiusExtended;
+		double southEdge = tableY - tableRadiusExtended;
+		double eastEdge = tableX + tableRadiusExtended;
+		double westEdge = tableX - tableRadiusExtended;
+
+		if (westEdge < playerX && playerX < eastEdge) {
+
+			if (movingNorth && southEdge <= playerY && playerY < tableY)
+				return true;
+			if (movingSouth && tableY < playerY && playerY <= northEdge)
+				return true;
+
+		}
+
+		if (southEdge < playerY && playerY < northEdge) {
+
+			if (movingEast && westEdge <= playerX && playerX < tableX)
+				return true;
+			if (movingWest && tableX < playerX && playerX <= eastEdge)
+				return true;
+
+		}
+
+		return false;
+
+	}
+
 	public static final Vector getArmLocation(Player player, Hand hand) {
 		Objects.requireNonNull(player, "player cannot be null");
 		Objects.requireNonNull(hand, "hand cannot be null");
@@ -138,62 +191,20 @@ public final class PlayerUtils {
 		return Math.exp(energy / 100.0 - 1);
 	}
 
-	private static boolean isAgainstTable(Field field, Player player, boolean movingForward) {
+	private static boolean isAgainstAnyTable(Field field, Player player, boolean movingForward) {
+		for (Team team : field.getTeams())
+			if (isAgainstTable(player, team.getTable(), movingForward))
+				return true;
+		return false;
+	}
 
-		Vector location = player.getLocation();
-		double playerX = location.getX();
-		double playerY = location.getY();
-		Direction heading = player.getHeading();
-		double halfPi = Math.PI / 2.0;
-
-		boolean movingNorth, movingSouth, movingEast, movingWest;
-		if (movingForward) {
-			movingNorth = heading.angle(Direction.NORTH) < halfPi;
-			movingSouth = heading.angle(Direction.SOUTH) < halfPi;
-			movingEast = heading.angle(Direction.EAST) < halfPi;
-			movingWest = heading.angle(Direction.WEST) < halfPi;
-		} else {
-			movingNorth = heading.angle(Direction.NORTH) > halfPi;
-			movingSouth = heading.angle(Direction.SOUTH) > halfPi;
-			movingEast = heading.angle(Direction.EAST) > halfPi;
-			movingWest = heading.angle(Direction.WEST) > halfPi;
-		}
-
+	private static boolean canPickupFromAnyTable(Field field, Player player) {
 		for (Team team : field.getTeams()) {
 			Table table = team.getTable();
-
-			Vector tableLocation = table.getLocation();
-			double tableX = tableLocation.getX();
-			double tableY = tableLocation.getY();
-
-			double tableRadiusExtended = Table.RADIUS + Player.COLLISION_RADIUS;
-			double northEdge = tableY + tableRadiusExtended;
-			double southEdge = tableY - tableRadiusExtended;
-			double eastEdge = tableX + tableRadiusExtended;
-			double westEdge = tableX - tableRadiusExtended;
-
-			if (westEdge < playerX && playerX < eastEdge) {
-
-				if (movingNorth && southEdge <= playerY && playerY < tableY)
-					return true;
-				if (movingSouth && tableY < playerY && playerY <= northEdge)
-					return true;
-
-			}
-
-			if (southEdge < playerY && playerY < northEdge) {
-
-				if (movingEast && westEdge <= playerX && playerX < tableX)
-					return true;
-				if (movingWest && tableX < playerX && playerX <= eastEdge)
-					return true;
-
-			}
-
+			if (isAgainstTable(player, table, true) && !table.getFood().isEmpty())
+				return true;
 		}
-
 		return false;
-
 	}
 
 }

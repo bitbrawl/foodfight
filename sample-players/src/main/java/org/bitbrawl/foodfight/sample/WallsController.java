@@ -34,8 +34,7 @@ public final class WallsController extends JavaController {
 	}
 
 	public static void main(String[] args) {
-		DebugUtils.runDebugMatch(MatchType.TEAM, DummyController.class, RandomController.class,
-				HidingController.class, WallsController.class);
+		DebugUtils.runDebugMatch(MatchType.TEAM, RandomController.class, WallsController.class);
 	}
 
 }
