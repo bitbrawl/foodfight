@@ -15,7 +15,7 @@ public interface Player extends Locatable {
 
 	public Inventory getInventory();
 
-	public double getHealth();
+	public double getEnergy();
 
 	public static final double HEIGHT = 200.0;
 	public static final double MIN_HEIGHT = 100.0;
@@ -29,7 +29,7 @@ public interface Player extends Locatable {
 	public static final double LEFT_ARM_DIRECTION = -Math.PI / 6.0;
 	public static final double RIGHT_ARM_DIRECTION = Math.PI / 6.0;
 	public static final double COLLISION_RADIUS = 50.0;
-	public static final double MAX_HEALTH = 100.0;
+	public static final double MAX_ENERGY = 100.0;
 	public static final RandomScalar COLLISION_DAMAGE = new RandomScalar(2.0, 1.0);
 
 	public enum Hand {

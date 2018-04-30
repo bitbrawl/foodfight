@@ -134,6 +134,10 @@ public final class PlayerUtils {
 
 	}
 
+	public static double getMoveMultiplier(double energy) {
+		return Math.exp(energy / 100.0 - 1);
+	}
+
 	private static boolean isAgainstTable(Field field, Player player, boolean movingForward) {
 
 		Vector location = player.getLocation();

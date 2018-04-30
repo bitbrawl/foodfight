@@ -178,14 +178,15 @@ public final class DefaultTurnRunner implements TurnRunner {
 		Comparator<Player> playerComparator = new PlayerComparator(field);
 
 		Map<TeamState, ScoreState> scores = new HashMap<>();
+		Map<PlayerState, Double> damages = new HashMap<>();
 
 		for (TeamState team : field.getTeamStates())
-			for (Player player : team.getPlayerStates()) {
+			for (PlayerState player : team.getPlayerStates()) {
 
 				Vector playerLocation = player.getLocation();
 
 				for (TeamState otherTeam : field.getTeamStates())
-					for (Player otherPlayer : otherTeam.getPlayerStates()) {
+					for (PlayerState otherPlayer : otherTeam.getPlayerStates()) {
 						if (playerComparator.compare(player, otherPlayer) >= 0)
 							continue;
 
@@ -194,8 +195,10 @@ public final class DefaultTurnRunner implements TurnRunner {
 
 						if (playerLocation.subtract(otherLocation).getMagnitude() < collisionDistance) {
 							Vector collisionLocation = Vector.average(playerLocation, otherLocation);
-							collisions
-									.add(new CollisionState(collisionLocation, Player.COLLISION_DAMAGE.getAsDouble()));
+							double damage = Player.COLLISION_DAMAGE.getAsDouble();
+							collisions.add(new CollisionState(collisionLocation, damage));
+							damages.merge(player, damage, Double::sum);
+							damages.merge(otherPlayer, damage, Double::sum);
 							BiFunction<TeamState, ScoreState, ScoreState> remapping = (k, v) -> {
 								if (v == null)
 									v = k.getScore();
@@ -221,7 +224,9 @@ public final class DefaultTurnRunner implements TurnRunner {
 					if (playerLocation.subtract(foodLocation).getMagnitude() < collisionDistance) {
 						Vector collisionLocation = playerLocation.multiply(foodRadius)
 								.add(foodLocation.multiply(Player.COLLISION_RADIUS)).divide(collisionDistance);
-						collisions.add(new CollisionState(collisionLocation, food.getType().getDamage().getAsDouble()));
+						double damage = food.getType().getDamage().getAsDouble();
+						collisions.add(new CollisionState(collisionLocation, damage));
+						damages.merge(player, damage, Double::sum);
 						BiFunction<TeamState, ScoreState, ScoreState> remapping = (k, v) -> {
 							if (v == null)
 								v = k.getScore();
@@ -260,7 +265,6 @@ public final class DefaultTurnRunner implements TurnRunner {
 		}
 
 		Map<PlayerState, Vector> knockbacks = new HashMap<>();
-		Map<PlayerState, Double> damages = new HashMap<>();
 		Set<FoodState> remainingFood = new LinkedHashSet<>(field.getFoodStates());
 
 		for (CollisionState collision : collisions) {
@@ -280,7 +284,6 @@ public final class DefaultTurnRunner implements TurnRunner {
 					Vector knockbackVector = Vector.polar(knockback, collisionToPlayer.getDirection());
 
 					knockbacks.merge(player, knockbackVector, Vector::add);
-					damages.merge(player, collision.getDamage(), Double::sum);
 
 				}
 
@@ -304,13 +307,15 @@ public final class DefaultTurnRunner implements TurnRunner {
 			for (PlayerState player : team.getPlayerStates()) {
 
 				Vector knockback = knockbacks.get(player);
+				Double damage = damages.getOrDefault(player, 0.0);
 
-				if (knockback == null) {
+				if (knockback == null && damage == 0.0) {
 					players.add(player);
 				} else {
 					Vector location = movePlayer(field, player.getLocation(), knockback);
+					double energy = Math.max(player.getEnergy() - damage, 0);
 					players.add(new PlayerState(player.getSymbol(), location, player.getHeight(), player.getHeading(),
-							player.getInventory(), player.getHealth()));
+							player.getInventory(), energy));
 				}
 
 			}
@@ -411,7 +416,7 @@ public final class DefaultTurnRunner implements TurnRunner {
 		ScoreState score = team.getScore();
 		Set<FoodState> food = new LinkedHashSet<>(field.getFoodStates());
 		InventoryState inventory = player.getInventory();
-		double health = player.getHealth();
+		double energy = player.getEnergy();
 
 		if (action != null)
 			if (action.isPickingUp()) {
@@ -447,7 +452,7 @@ public final class DefaultTurnRunner implements TurnRunner {
 
 				Food.Type type = inventory.get(hand);
 				inventory = inventory.remove(hand);
-				health = Math.min(health + type.getHealth().getAsDouble(), Player.MAX_HEALTH);
+				energy = Math.min(energy + type.getEnergy().getAsDouble(), Player.MAX_ENERGY);
 
 				score = score.addEvent(Event.FIRST_EAT).addEvent(Event.EVERY_EAT);
 
@@ -459,7 +464,7 @@ public final class DefaultTurnRunner implements TurnRunner {
 		double height = calculateHeight(player, action);
 		Direction heading = calculateHeading(player, action);
 
-		player = new PlayerState(player.getSymbol(), location, height, heading, inventory, health);
+		player = new PlayerState(player.getSymbol(), location, height, heading, inventory, energy);
 		Set<PlayerState> players = new LinkedHashSet<>();
 		for (PlayerState teamPlayer : team.getPlayerStates())
 			if (player.getSymbol() == teamPlayer.getSymbol())
@@ -486,15 +491,19 @@ public final class DefaultTurnRunner implements TurnRunner {
 
 		Vector location = player.getLocation();
 
+		double multiplier = PlayerUtils.getMoveMultiplier(player.getEnergy());
 		Vector velocity;
-		if (action == null)
+		if (action == null) {
 			return location;
-		else if (action.equals(Action.MOVE_FORWARD))
-			velocity = Vector.polar(Player.FORWARD_MOVEMENT_SPEED.getAsDouble(), player.getHeading());
-		else if (action.equals(Action.MOVE_BACKWARD))
-			velocity = Vector.polar(Player.REVERSE_MOVEMENT_SPEED.getAsDouble(), player.getHeading().getOpposite());
-		else
+		} else if (action.equals(Action.MOVE_FORWARD)) {
+			double speed = Player.FORWARD_MOVEMENT_SPEED.getAsDouble() * multiplier;
+			velocity = Vector.polar(speed, player.getHeading());
+		} else if (action.equals(Action.MOVE_BACKWARD)) {
+			double speed = Player.REVERSE_MOVEMENT_SPEED.getAsDouble() * multiplier;
+			velocity = Vector.polar(speed, player.getHeading().getOpposite());
+		} else {
 			return location;
+		}
 
 		return movePlayer(field, location, velocity);
 

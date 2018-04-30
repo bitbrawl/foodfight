@@ -11,16 +11,16 @@ public final class PlayerState implements Player {
 	private final double height;
 	private final Direction heading;
 	private final InventoryState inventory;
-	private final double health;
+	private final double energy;
 
 	public PlayerState(char symbol, Vector location, double height, Direction heading, InventoryState inventory,
-			double health) {
+			double energy) {
 		this.symbol = symbol;
 		this.location = location;
 		this.height = height;
 		this.heading = heading;
 		this.inventory = inventory;
-		this.health = health;
+		this.energy = energy;
 	}
 
 	public static PlayerState fromPlayer(Player player) {
@@ -33,7 +33,7 @@ public final class PlayerState implements Player {
 		double height = player.getHeight();
 		Direction heading = player.getHeading();
 		InventoryState inventory = InventoryState.fromInventory(player.getInventory());
-		double health = player.getHealth();
+		double health = player.getEnergy();
 		return new PlayerState(symbol, location, height, heading, inventory, health);
 	}
 
@@ -44,7 +44,7 @@ public final class PlayerState implements Player {
 		height = Double.NaN;
 		heading = null;
 		inventory = null;
-		health = Double.NaN;
+		energy = Double.NaN;
 	}
 
 	@Override
@@ -73,8 +73,8 @@ public final class PlayerState implements Player {
 	}
 
 	@Override
-	public double getHealth() {
-		return health;
+	public double getEnergy() {
+		return energy;
 	}
 
 	@Override
@@ -89,8 +89,8 @@ public final class PlayerState implements Player {
 		result.append(heading);
 		result.append(",inventory=");
 		result.append(inventory);
-		result.append(",health=");
-		result.append(health);
+		result.append(",energy=");
+		result.append(energy);
 		result.append(']');
 		return result.toString();
 	}

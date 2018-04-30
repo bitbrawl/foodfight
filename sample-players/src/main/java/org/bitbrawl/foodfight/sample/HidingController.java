@@ -1,7 +1,7 @@
 package org.bitbrawl.foodfight.sample;
 
 import org.bitbrawl.foodfight.controller.JavaController;
-import org.bitbrawl.foodfight.engine.match.DebugMatchRunner;
+import org.bitbrawl.foodfight.engine.match.DebugUtils;
 import org.bitbrawl.foodfight.field.Field;
 import org.bitbrawl.foodfight.field.MatchType;
 import org.bitbrawl.foodfight.field.Player;
@@ -18,7 +18,7 @@ public final class HidingController extends JavaController {
 	}
 
 	public static void main(String[] args) {
-		DebugMatchRunner.runDebugMatch(MatchType.FREE_FOR_ALL, DummyController.class, RandomController.class,
+		DebugUtils.runDebugMatch(MatchType.FREE_FOR_ALL, DummyController.class, RandomController.class,
 				HidingController.class);
 	}
 

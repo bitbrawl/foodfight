@@ -133,7 +133,7 @@ public final class FieldGenerator implements Supplier<FieldState> {
 			Direction heading = Direction.random();
 			InventoryState inventory = new InventoryState(new EnumMap<>(Hand.class));
 
-			result[i] = new PlayerState(symbol, location, 0.0, heading, inventory, Player.MAX_HEALTH);
+			result[i] = new PlayerState(symbol, location, 0.0, heading, inventory, Player.MAX_ENERGY);
 
 		}
 

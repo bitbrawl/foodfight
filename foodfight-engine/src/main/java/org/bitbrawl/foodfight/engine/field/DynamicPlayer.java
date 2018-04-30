@@ -43,8 +43,8 @@ public final class DynamicPlayer implements Player, Dynamic<PlayerState> {
 	}
 
 	@Override
-	public double getHealth() {
-		return state.getHealth();
+	public double getEnergy() {
+		return state.getEnergy();
 	}
 
 	@Override

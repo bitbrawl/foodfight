@@ -72,6 +72,8 @@ public final class FrameGenerator implements Function<FieldState, BufferedImage>
 		for (Team team : initialState.getTeams()) {
 			float teamHue = teamColors.get(team);
 
+			graphics.setClip(0, 0, FIELD_WIDTH, FRAME_HEIGHT);
+
 			BufferedImage tableImage = tintImage(resources.getTable(), resources.getTable(), teamHue);
 			drawObject(team.getTable().getLocation(), Direction.NORTH, tableImage, graphics);
 
@@ -79,6 +81,8 @@ public final class FrameGenerator implements Function<FieldState, BufferedImage>
 
 				Color idColor = getColor(getColor(player), 0.5F);
 				Color teamColor = getColor(teamHue, 0.9F);
+
+				graphics.setClip(playerBoxStartX, playerBoxStartY, playerBoxWidth, PLAYER_FRAME_HEIGHT);
 
 				// player box
 				graphics.setColor(teamColor);
@@ -209,15 +213,11 @@ public final class FrameGenerator implements Function<FieldState, BufferedImage>
 				graphics.setColor(Color.BLACK);
 				graphics.setFont(new Font(Font.MONOSPACED, Font.BOLD, 20));
 				FontMetrics metrics = graphics.getFontMetrics();
-				// TODO figure out these calculations
-				graphics.drawString(Integer.toString(team.getScore().getTotalPoints()),
-						playerBoxStartX + 80 + metrics.charWidth('A'), playerBoxStartY + 10 + metrics.getAscent());
-				// TODO figure out how to get timing over here
-				// graphics.drawString(String.format("Time left: %6.3fs",
-				// player.getTimeLeft()),
-				// scaled(playerBoxStartX + 10),
-				// scaled(playerBoxStartY - 10) + PLAYER_FRAME_HEIGHT -
-				// graphics.getFontMetrics().getDescent());
+				int ascent = metrics.getAscent();
+				String pointsText = "Points: " + team.getScore().getTotalPoints();
+				graphics.drawString(pointsText, playerBoxStartX + 100, playerBoxStartY + 10 + ascent);
+				String energyText = "Energy: " + Math.round(player.getEnergy());
+				graphics.drawString(energyText, playerBoxStartX + 100, playerBoxStartY + 20 + 2 * ascent);
 
 				BufferedImage sideImage = getProfile(player);
 				int height = playerBoxStartY + PLAYER_FRAME_HEIGHT - sideImage.getHeight()

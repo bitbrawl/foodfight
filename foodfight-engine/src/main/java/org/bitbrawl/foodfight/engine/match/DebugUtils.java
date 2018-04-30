@@ -22,9 +22,9 @@ import org.bitbrawl.foodfight.engine.video.ImageFrame;
 import org.bitbrawl.foodfight.field.MatchType;
 import org.bitbrawl.foodfight.field.Player;
 
-public final class DebugMatchRunner {
+public final class DebugUtils {
 
-	private DebugMatchRunner() {
+	private DebugUtils() {
 		throw new AssertionError("This class is not instantiable");
 	}
 

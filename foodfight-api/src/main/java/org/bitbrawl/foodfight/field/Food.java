@@ -19,31 +19,31 @@ public interface Food extends Locatable {
 	public enum Type {
 
 		@SerializedName("apple")
-		APPLE("Apple", 20.0, new RandomScalar(5.0, 0.2), new RandomScalar(5.0, 1.0)),
+		APPLE("Apple", 20.0, new RandomScalar(20.0, 0.2), new RandomScalar(20.0, 1.0)),
 		@SerializedName("banana")
-		BANANA("Banana", 20.0, new RandomScalar(5.0, 1.0), new RandomScalar(5.0, 1.0)),
+		BANANA("Banana", 20.0, new RandomScalar(20.0, 1.0), new RandomScalar(20.0, 1.0)),
 		@SerializedName("raspberry")
-		RASPBERRY("Raspberry", 10.0, new RandomScalar(2.0, 0.5), new RandomScalar(5.0, 1.0)),
+		RASPBERRY("Raspberry", 10.0, new RandomScalar(10.0, 0.5), new RandomScalar(10.0, 1.0)),
 		@SerializedName("broccoli")
-		BROCCOLI("Broccoli", 20.0, new RandomScalar(10.0, 1.0), new RandomScalar(2.0, 0.5)),
+		BROCCOLI("Broccoli", 20.0, new RandomScalar(50.0, 1.0), new RandomScalar(10.0, 0.5)),
 		@SerializedName("milk")
-		MILK("Milk", 20.0, new RandomScalar(5.0, 1.0), new RandomScalar(5.0, 1.0)),
+		MILK("Milk", 20.0, new RandomScalar(20.0, 1.0), new RandomScalar(20.0, 1.0)),
 		@SerializedName("chocolate")
-		CHOCOLATE("Chocolate", 20.0, new RandomScalar(10.0, 1.0), new RandomScalar(5.0, 1.0)),
+		CHOCOLATE("Chocolate", 20.0, new RandomScalar(50.0, 1.0), new RandomScalar(20.0, 1.0)),
 		@SerializedName("sandwich")
-		SANDWICH("Sandwich", 20.0, new RandomScalar(10.0, 2.0), new RandomScalar(5.0, 1.0)),
+		SANDWICH("Sandwich", 20.0, new RandomScalar(50.0, 2.0), new RandomScalar(20.0, 1.0)),
 		@SerializedName("pie")
-		PIE("Pie", 50.0, new RandomScalar(10.0, 1.0), new RandomScalar(20.0, 1.0));
+		PIE("Pie", 50.0, new RandomScalar(50.0, 1.0), new RandomScalar(100.0, 1.0));
 
 		private final String name;
 		private final double radius;
-		private final RandomScalar health;
+		private final RandomScalar energy;
 		private final RandomScalar damage;
 
 		private Type(String name, double radius, RandomScalar health, RandomScalar damage) {
 			this.name = name;
 			this.radius = radius;
-			this.health = health;
+			this.energy = health;
 			this.damage = damage;
 		}
 
@@ -56,8 +56,8 @@ public interface Food extends Locatable {
 			return radius;
 		}
 
-		public RandomScalar getHealth() {
-			return health;
+		public RandomScalar getEnergy() {
+			return energy;
 		}
 
 		public RandomScalar getDamage() {
