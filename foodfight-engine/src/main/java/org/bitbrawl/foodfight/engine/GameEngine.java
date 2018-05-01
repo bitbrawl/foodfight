@@ -40,23 +40,15 @@ import org.bitbrawl.foodfight.util.Vector;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-public enum GameEngine {
+public final class GameEngine {
 
-	INSTANCE;
+	private final Configuration config;
+
+	public GameEngine(Configuration config) {
+		this.config = config;
+	}
 
 	public void runMatches() throws InterruptedException {
-
-		Configuration config;
-
-		try {
-			config = Configuration.getConfig(Paths.get("config.json"));
-		} catch (IOException e) {
-			logger.log(Level.SEVERE, "Unable to read configuration file", e);
-			return;
-		} catch (ConfigException e) {
-			logger.log(Level.SEVERE, "Invalid configuration file", e);
-			return;
-		}
 
 		Path data = config.getData();
 		try {
@@ -188,11 +180,25 @@ public enum GameEngine {
 		Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
 			logger.log(Level.SEVERE, "Problem running game engine", e);
 		});
+
+		Configuration config;
+
 		try {
-			INSTANCE.runMatches();
+			config = Configuration.getConfig(Paths.get("config.json"));
+		} catch (IOException e) {
+			logger.log(Level.SEVERE, "Unable to read configuration file", e);
+			return;
+		} catch (ConfigException e) {
+			logger.log(Level.SEVERE, "Invalid configuration file", e);
+			return;
+		}
+
+		try {
+			new GameEngine(config).runMatches();
 		} catch (InterruptedException e) {
 			logger.log(Level.SEVERE, "Main thread interrupted", e);
 		}
+
 	}
 
 	private static final Logger logger = EngineLogger.INSTANCE;

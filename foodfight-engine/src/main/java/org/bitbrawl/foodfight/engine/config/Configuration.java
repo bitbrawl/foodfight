@@ -1,6 +1,9 @@
 package org.bitbrawl.foodfight.engine.config;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.Writer;
 import java.lang.reflect.Type;
@@ -54,26 +57,48 @@ public final class Configuration {
 		} else {
 
 			try (Reader reader = Files.newBufferedReader(configFile)) {
-				result = gson.fromJson(reader, Configuration.class);
+				return readConfig(reader);
 			} catch (JsonIOException e) {
 				throw new IOException("Unable to read configuration file", e);
 			} catch (JsonSyntaxException e) {
 				throw new ConfigException("Invalid JSON in configuration file", e);
 			}
 
-			if (result.numMatches <= 0)
-				throw new ConfigException("numMatches must be at least 1");
-			if (result.matchType == null)
-				throw new ConfigException("matchType must be defined");
-			List<ControllerConfig> controllers = result.controllers;
-			if (controllers == null)
-				throw new ConfigException("The list of controllers must be defined");
-			if (controllers.isEmpty())
-				throw new ConfigException("The list of controllers cannot be empty");
-			if (result.data == null)
-				throw new ConfigException("The data folder must be specified");
-
 		}
+
+		return result;
+
+	}
+
+	public static Configuration getConfig(InputStream configResource) throws IOException, ConfigException {
+		Objects.requireNonNull(configResource, "configResource cannot be null");
+
+		try (Reader reader = new InputStreamReader(configResource);
+				BufferedReader buffered = new BufferedReader(reader)) {
+			return readConfig(buffered);
+		} catch (JsonIOException e) {
+			throw new IOException("Unable to read configuration file", e);
+		} catch (JsonSyntaxException e) {
+			throw new ConfigException("Invalid JSON in configuration file", e);
+		}
+
+	}
+
+	private static Configuration readConfig(Reader reader) throws ConfigException {
+
+		Configuration result = gson.fromJson(reader, Configuration.class);
+
+		if (result.numMatches <= 0)
+			throw new ConfigException("numMatches must be at least 1");
+		if (result.matchType == null)
+			throw new ConfigException("matchType must be defined");
+		List<ControllerConfig> controllers = result.controllers;
+		if (controllers == null)
+			throw new ConfigException("The list of controllers must be defined");
+		if (controllers.isEmpty())
+			throw new ConfigException("The list of controllers cannot be empty");
+		if (result.data == null)
+			throw new ConfigException("The data folder must be specified");
 
 		return result;
 
