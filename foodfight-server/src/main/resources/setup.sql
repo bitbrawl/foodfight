@@ -66,6 +66,7 @@ CREATE TABLE pairwise_result
      total_matches     MEDIUMINT UNSIGNED NOT NULL DEFAULT 0,
      wins              MEDIUMINT UNSIGNED NOT NULL DEFAULT 0,
      result            ENUM('win', 'tie', 'loss') NOT NULL DEFAULT 'tie',
+     focus_count       MEDIUMINT UNSIGNED NOT NULL DEFAULT 0,
      PRIMARY KEY(id),
      FOREIGN KEY(type_id) REFERENCES match_type(id),
      FOREIGN KEY(first_version_id) REFERENCES competitor_version(id),

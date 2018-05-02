@@ -65,13 +65,17 @@ public enum ServerEngine {
 					if (database.updateMatch(history)) {
 						logger.info("Generating video");
 						CharFunction<String> names = c -> competitors.apply(c).getUsername();
-						ImageEncoder.encode(history, names, matchFolder.resolve("video.mp4"));
+						Path videoFile = config.getDataFolder().resolve(matchName + ".mp4");
+						ImageEncoder.encode(history, names, videoFile);
 						database.addVideo(matchId);
 					}
 
-					Thread.sleep(1000);
+					Thread.sleep(1000L);
 
 				}
+
+				logger.info("sleeping");
+				Thread.sleep(1000L);
 
 			} catch (IOException | TransportException e) {
 				logger.log(Level.SEVERE, "I/O problem", e);
@@ -81,8 +85,6 @@ public enum ServerEngine {
 				logger.log(Level.SEVERE, "SQL problem", e);
 			} catch (MavenInvocationException | CommandLineException e) {
 				logger.log(Level.SEVERE, "Maven problem", e);
-			} finally {
-				Thread.sleep(1000);
 			}
 
 		}

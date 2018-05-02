@@ -5,9 +5,15 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Writer;
+import java.net.URI;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -77,8 +83,8 @@ import com.google.gson.GsonBuilder;
 
 class Database {
 
-	private final String insertVersionQuery, insertPairwiseQuery, selectPairingResultsQuery, selectPairwiseQuery,
-			selectResultsQuery, updateScoreQuery;
+	private final String insertVersionQuery, insertPairwiseQuery, selectPairingResultsQuery, selectPairingsQuery,
+			selectPairwiseQuery, selectResultsQuery, updateScoreQuery;
 	private final ServerConfig config;
 
 	public Database(ServerConfig config) throws IOException {
@@ -86,6 +92,7 @@ class Database {
 		insertVersionQuery = sqlFileToString("insert_version.sql");
 		insertPairwiseQuery = sqlFileToString("insert_pairwise.sql");
 		selectPairingResultsQuery = sqlFileToString("select_pairing_results.sql");
+		selectPairingsQuery = sqlFileToString("select_pairings.sql");
 		selectPairwiseQuery = sqlFileToString("select_pairwise.sql");
 		selectResultsQuery = sqlFileToString("select_results.sql");
 		updateScoreQuery = sqlFileToString("update_score.sql");
@@ -119,26 +126,77 @@ class Database {
 			type = MatchType.TEAM;
 
 		List<Competitor> competitors = new ArrayList<>();
+		CompetitorPair selectedPair;
+		Map<Integer, Competitor> pairCompetitors = new HashMap<>();
 
 		try (Connection connection = connect()) {
 
-			String query = "SELECT id, username FROM competitor WHERE division_id <= ?";
-			try (PreparedStatement statement = connection.prepareStatement(query)) {
-				statement.setInt(1, division.getId());
+			List<CompetitorPair> pairs = new LinkedList<>();
 
+			try (PreparedStatement statement = connection.prepareStatement(selectPairingsQuery)) {
+				statement.setInt(1, type.getNumberOfPlayers());
+				statement.setInt(2, division.getId());
+				statement.setInt(3, division.getId());
+				statement.setInt(4, division.getId());
+				statement.setInt(5, division.getId());
+				statement.setInt(6, type.getNumberOfPlayers());
+				statement.setInt(7, division.getId());
+				statement.setInt(8, division.getId());
+				statement.setInt(9, division.getId());
+				statement.setInt(10, division.getId());
+				try (ResultSet result = statement.executeQuery()) {
+					while (result.next()) {
+						pairs.add(new CompetitorPair(result.getInt("first_competitor"),
+								result.getInt("second_competitor")));
+					}
+				}
+			}
+
+			if (pairs.isEmpty())
+				return Collections.emptyList();
+
+			selectedPair = randomElement(pairs);
+			String query = "SELECT id, username FROM competitor where id = ? or id = ?";
+			try (PreparedStatement statement = connection.prepareStatement(query)) {
+				statement.setInt(1, selectedPair.getFirstId());
+				statement.setInt(2, selectedPair.getSecondId());
 				try (ResultSet result = statement.executeQuery()) {
 					while (result.next()) {
 						int id = result.getInt("id");
 						String username = result.getString("username");
-						competitors.add(new Competitor(id, username));
+						Competitor competitor = new Competitor(id, username);
+						pairCompetitors.put(id, competitor);
+						competitors.add(competitor);
 					}
 				}
+			}
+
+			if (!type.equals(MatchType.DUEL)) {
+
+				List<Competitor> allCompetitors = new ArrayList<>();
+
+				query = "SELECT id, username FROM competitor WHERE division_id <= ? AND id != ? AND id != ?";
+				try (PreparedStatement statement = connection.prepareStatement(query)) {
+					statement.setInt(1, division.getId());
+					statement.setInt(2, selectedPair.getFirstId());
+					statement.setInt(3, selectedPair.getSecondId());
+
+					try (ResultSet result = statement.executeQuery()) {
+						while (result.next()) {
+							int id = result.getInt("id");
+							String username = result.getString("username");
+							allCompetitors.add(new Competitor(id, username));
+						}
+					}
+
+				}
+
+				competitors.addAll(randomSubset(allCompetitors, type.getNumberOfPlayers() - 2));
+				Collections.shuffle(competitors);
 
 			}
 
 		}
-
-		competitors = randomSubset(competitors, type.getNumberOfPlayers());
 
 		Map<Competitor, String> versionNames = new LinkedHashMap<>();
 		for (Competitor competitor : competitors)
@@ -178,6 +236,15 @@ class Database {
 
 			for (Competitor competitor : competitors)
 				versionIds.put(competitor, getVersionId(connection, competitor.getId(), versionNames.get(competitor)));
+
+			int firstVersionId = versionIds.get(pairCompetitors.get(selectedPair.getFirstId()));
+			int secondVersionId = versionIds.get(pairCompetitors.get(selectedPair.getSecondId()));
+			int pairingId = selectPairwise(connection, type, firstVersionId, secondVersionId);
+			String update = "UPDATE pairwise_result SET focus_count = focus_count + 1 WHERE id = ?";
+			try (PreparedStatement statement = connection.prepareStatement(update)) {
+				statement.setInt(1, pairingId);
+				statement.executeUpdate();
+			}
 
 			for (Set<Set<Competitor>> matchGrouping : matchGroupings) {
 
@@ -289,7 +356,7 @@ class Database {
 		if (Files.notExists(localRepo)) {
 			logger.log(Level.INFO, "Cloning repo: {0}", username);
 			CloneCommand clone = Git.cloneRepository();
-			String uri = "https://github.com/fvoichick/foodfighter-" + username;
+			String uri = "https://github.com/bitbrawl/foodfighter-" + username;
 			clone.setURI(uri).setDirectory(localRepo.toFile());
 			clone.setCredentialsProvider(credentials);
 			clone.call().close();
@@ -376,7 +443,7 @@ class Database {
 		Path configPath = localRepo.resolve("src").resolve("main").resolve("resources").resolve("config.json");
 		CompetitorConfig competitorConfig = CompetitorConfig.getInstance(configPath);
 
-		Path jar = localRepo.resolve("target").resolve("foodfighter-" + username + "-0.1.0.jar");
+		Path jar = localRepo.resolve("target").resolve("foodfighter-" + username + "-0.1.1.jar");
 		Path log = matchFolder.resolve(username + ".log");
 		return new JarController(jar, competitorConfig.getMainClass(), log);
 
@@ -470,21 +537,46 @@ class Database {
 
 		Path folder = config.getDataFolder().resolve(matchName);
 		Path traceFile = folder.resolve("trace.json");
-		String location = "foodfight/data/" + matchName;
-		uploadFile(traceFile, location);
-		for (Path file : Files.newDirectoryStream(folder, "*.log"))
-			uploadFile(file, location);
+		Path zipPath = config.getDataFolder().resolve(matchName + ".zip");
+		URI uri = URI.create("jar:" + zipPath.toUri().toString());
+		Map<String, String> env = Collections.singletonMap("create", "true");
+		try (FileSystem zipSystem = FileSystems.newFileSystem(uri, env)) {
+			Path jarTrace = zipSystem.getPath("trace.json");
+			Files.copy(traceFile, jarTrace);
+			for (Path file : Files.newDirectoryStream(folder, "*.log"))
+				Files.copy(file, zipSystem.getPath(file.getFileName().toString()));
+		}
+		String location = "foodfight/data/" + matchName + ".zip";
+		uploadFile(zipPath, location);
+		Files.walkFileTree(folder, new SimpleFileVisitor<Path>() {
+			@Override
+			public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+				Files.delete(file);
+				return FileVisitResult.CONTINUE;
+			}
+
+			@Override
+			public FileVisitResult postVisitDirectory(Path dir, IOException e) throws IOException {
+				if (e == null) {
+					Files.delete(dir);
+					return FileVisitResult.CONTINUE;
+				} else {
+					throw e;
+				}
+			}
+		});
 
 	}
 
 	private void uploadToYoutube(int matchId, Path videoFile) {
 
 		String matchName = Match.getMatchName(matchId);
+		String location = "foodfight/data/" + matchName + ".mp4";
 		logger.log(Level.INFO, "Uploading video", matchName);
 
 		// TODO upload to YouTube instead of S3
 
-		uploadFile(videoFile, "foodfight/data/" + matchName);
+		uploadFile(videoFile, location);
 
 	}
 
@@ -494,53 +586,20 @@ class Database {
 		AWSCredentialsProvider provider = new AWSStaticCredentialsProvider(credentials);
 		AmazonS3 s3Client = AmazonS3ClientBuilder.standard().withCredentials(provider).withRegion(Regions.US_EAST_2)
 				.build();
-		s3Client.putObject("data.bitbrawl.org", location + "/" + file.getFileName(), file.toFile());
+		s3Client.putObject("data.bitbrawl.org", location, file.toFile());
 	}
 
 	private boolean addMatchResult(Connection connection, MatchHistory match, Set<Integer> versionsA,
 			Set<Integer> versionsB, boolean didWin) throws SQLException {
 
 		int matchId = match.getMatchNumber();
-		int typeId = match.getFinalState().getMatchType().getNumberOfPlayers();
 
 		boolean shouldGenerate = false;
 
 		for (int version1 : versionsA)
 			for (int version2 : versionsB) {
 
-				int pairwiseId = -1;
-
-				try (PreparedStatement statement = connection.prepareStatement(selectPairwiseQuery)) {
-					statement.setInt(1, typeId);
-					statement.setInt(2, version1);
-					statement.setInt(3, version2);
-					try (ResultSet result = statement.executeQuery()) {
-						if (result.next())
-							;
-						pairwiseId = result.getInt("id");
-					}
-				}
-
-				if (pairwiseId < 0) {
-
-					try (PreparedStatement statement = connection.prepareStatement(insertPairwiseQuery)) {
-						statement.setInt(1, typeId);
-						statement.setInt(2, version1);
-						statement.setInt(3, version2);
-						statement.executeUpdate();
-					}
-
-					try (PreparedStatement statement = connection.prepareStatement(selectPairwiseQuery)) {
-						statement.setInt(1, typeId);
-						statement.setInt(2, version1);
-						statement.setInt(3, version2);
-						try (ResultSet result = statement.executeQuery()) {
-							result.next();
-							pairwiseId = result.getInt("id");
-						}
-					}
-
-				}
+				int pairwiseId = selectPairwise(connection, match.getFinalState().getMatchType(), version1, version2);
 
 				String sql = "INSERT INTO match_result (match_id, pairwise_result_id, did_win) VALUES (?, ?, ?)";
 				try (PreparedStatement statement = connection.prepareStatement(sql)) {
@@ -594,6 +653,45 @@ class Database {
 			}
 
 		return shouldGenerate;
+
+	}
+
+	private int selectPairwise(Connection connection, MatchType type, int version1, int version2) throws SQLException {
+
+		int pairwiseId = -1;
+
+		try (PreparedStatement statement = connection.prepareStatement(selectPairwiseQuery)) {
+			statement.setInt(1, type.getNumberOfPlayers());
+			statement.setInt(2, version1);
+			statement.setInt(3, version2);
+			try (ResultSet result = statement.executeQuery()) {
+				if (result.next())
+					pairwiseId = result.getInt("id");
+			}
+		}
+
+		if (pairwiseId < 0) {
+
+			try (PreparedStatement statement = connection.prepareStatement(insertPairwiseQuery)) {
+				statement.setInt(1, type.getNumberOfPlayers());
+				statement.setInt(2, version1);
+				statement.setInt(3, version2);
+				statement.executeUpdate();
+			}
+
+			try (PreparedStatement statement = connection.prepareStatement(selectPairwiseQuery)) {
+				statement.setInt(1, type.getNumberOfPlayers());
+				statement.setInt(2, version1);
+				statement.setInt(3, version2);
+				try (ResultSet result = statement.executeQuery()) {
+					result.next();
+					return result.getInt("id");
+				}
+			}
+
+		} else {
+			return pairwiseId;
+		}
 
 	}
 
@@ -727,7 +825,7 @@ class Database {
 
 	public void addVideo(int matchId) throws SQLException {
 
-		Path videoFile = config.getDataFolder().resolve(Match.getMatchName(matchId)).resolve("video.mp4");
+		Path videoFile = config.getDataFolder().resolve(Match.getMatchName(matchId) + ".mp4");
 
 		uploadToYoutube(matchId, videoFile);
 
@@ -749,6 +847,10 @@ class Database {
 
 	private static final <E> E randomElement(E[] array) {
 		return array[ThreadLocalRandom.current().nextInt(array.length)];
+	}
+
+	private static final <E> E randomElement(List<E> list) {
+		return list.get(ThreadLocalRandom.current().nextInt(list.size()));
 	}
 
 	private static final <E> List<E> randomSubset(List<E> set, int size) {
