@@ -3,11 +3,8 @@ package org.bitbrawl.foodfight.field;
 import java.util.Set;
 
 import org.bitbrawl.foodfight.util.Direction;
-import org.bitbrawl.foodfight.util.Vector;
 
-public interface Table {
-
-	public Vector getLocation();
+public interface Table extends Locatable {
 
 	public Set<Food.Type> getFood();
 
