@@ -10,10 +10,6 @@ public enum Event {
 	FIRST_PICKUP("First pickup", Type.ONE_TIME, 5),
 	@SerializedName("firstThrow")
 	FIRST_THROW("First throw", Type.ONE_TIME, 10),
-	@SerializedName("everyPickup")
-	EVERY_PICKUP("Every pickup", Type.ONGOING, 1),
-	@SerializedName("everyThrow")
-	EVERY_THROW("Every throw", Type.ONGOING, 2),
 	@SerializedName("everyFoodCollision")
 	EVERY_FOOD_COLLISION("Every time hit by food", Type.ONGOING, -500),
 	@SerializedName("everyPlayerCollision")
@@ -41,10 +37,10 @@ public enum Event {
 		this.pointValue = pointValue;
 	}
 
-	 @Override
-	 public String toString() {
-		 return name;
-	 }
+	@Override
+	public String toString() {
+		return name;
+	}
 
 	public Type getType() {
 		return type;
@@ -56,7 +52,8 @@ public enum Event {
 
 	public enum Type {
 
-		ONE_TIME("One-time"), ONGOING("Ongoing");
+		ONE_TIME("One-time"),
+		ONGOING("Ongoing");
 
 		private final String name;
 

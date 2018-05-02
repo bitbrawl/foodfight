@@ -450,7 +450,7 @@ public final class DefaultTurnRunner implements TurnRunner {
 
 				Player.Hand hand = action.equals(Action.PICKUP_LEFT) ? Player.Hand.LEFT : Player.Hand.RIGHT;
 
-				score = score.addEvent(Event.FIRST_PICKUP).addEvent(Event.EVERY_PICKUP);
+				score = score.addEvent(Event.FIRST_PICKUP);
 
 				FoodState piece = randomFoodPieceWithinReach(field, player, hand);
 				if (piece == null) {
@@ -482,7 +482,7 @@ public final class DefaultTurnRunner implements TurnRunner {
 
 			} else if (action.isThrowing()) {
 
-				score = score.addEvent(Event.FIRST_THROW).addEvent(Event.EVERY_THROW);
+				score = score.addEvent(Event.FIRST_THROW);
 
 				Player.Hand hand = action.equals(Action.THROW_LEFT) ? Player.Hand.LEFT : Player.Hand.RIGHT;
 				Food.Type type = inventory.get(hand);
