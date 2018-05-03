@@ -41,9 +41,10 @@ public interface Player extends Locatable {
 	/**
 	 * Gets the height of the top of this player's head. This value will always
 	 * be somewhere between {@link #MIN_HEIGHT} and {@link #HEIGHT}. The only
-	 * way for this value to decrease is for a player to duck. If a piece of
-	 * food has a higher height than a given player, it will not collide with
-	 * that player.
+	 * way for this value to decrease is for a player to duck (if the player's
+	 * controller returns an action of {@link Action#DUCK}). If a piece of food
+	 * has a higher height than a given player, it will not collide with that
+	 * player.
 	 * 
 	 * @return this player's height
 	 */

@@ -9,6 +9,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.bitbrawl.foodfight.controller.Clock;
 import org.bitbrawl.foodfight.controller.Controller;
 import org.bitbrawl.foodfight.controller.ControllerException;
 import org.bitbrawl.foodfight.controller.JavaController;
@@ -27,10 +28,14 @@ public final class ControllerWrapper implements Controller {
 
 	public ControllerWrapper(Class<? extends JavaController> clazz) throws InterruptedException, ControllerException {
 
-		ControllerClock clock = new ControllerClock(Field.TIME_LIMIT_NANOS, TimeUnit.NANOSECONDS);
+		ControllerClock clock = new ControllerClock(Clock.TIME_LIMIT_NANOS, TimeUnit.NANOSECONDS);
 		Logger logger = new ControllerLogger(() -> turnNumber);
 
-		wrapped = runTimed(() -> JavaController.newInstance(clazz, logger, clock), clock);
+		wrapped = runTimed(() -> {
+			@SuppressWarnings("deprecation")
+			JavaController result = JavaController.newInstance(clazz, logger, clock);
+			return result;
+		}, clock);
 
 	}
 

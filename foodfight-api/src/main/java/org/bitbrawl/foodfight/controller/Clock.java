@@ -7,12 +7,13 @@ import org.bitbrawl.foodfight.field.Field;
 /**
  * A timer that can be used to determine how much time a controller has left for
  * all of its moves.
- * 
+ * <p>
  * Time limits in the game work like a chess timer: each controller gets a
  * certain amount of time total to make all of its moves
- * ({@link Field#TIME_LIMIT_NANOS}), but it can spend that time among its turns
- * however it wishes. For example, a controller could spend half of its allotted
- * time on its first move if it spends less on its remaining turns.
+ * ({@link #TIME_LIMIT_NANOS}, equal to sixty seconds), but it can spend that
+ * time among its turns however it wishes. For example, a controller could spend
+ * half of its allotted time on its first move if it spends less on its
+ * remaining turns.
  * 
  * @author Finn
  */
@@ -32,5 +33,8 @@ public interface Clock {
 	 * @return the amount of time remaining for the associated controller
 	 */
 	public long getTimeLeft(TimeUnit unit);
+
+	/** The time limit (in nanoseconds) for all of a controller's moves. */
+	public static final long TIME_LIMIT_NANOS = TimeUnit.SECONDS.toNanos(60L);
 
 }
