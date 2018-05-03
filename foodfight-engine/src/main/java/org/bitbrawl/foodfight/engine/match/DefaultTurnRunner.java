@@ -587,9 +587,9 @@ public final class DefaultTurnRunner implements TurnRunner {
 		if (action == null)
 			return heading;
 		else if (action.equals(Action.TURN_LEFT))
-			angularVelocity = -Player.TURN_SPEED.getAsDouble();
-		else if (action.equals(Action.TURN_RIGHT))
 			angularVelocity = Player.TURN_SPEED.getAsDouble();
+		else if (action.equals(Action.TURN_RIGHT))
+			angularVelocity = -Player.TURN_SPEED.getAsDouble();
 		else
 			return heading;
 
