@@ -7,8 +7,6 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.ExecutionException;
@@ -19,6 +17,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.bitbrawl.foodfight.adapter.ControllerLoader;
 import org.bitbrawl.foodfight.controller.Controller;
 import org.bitbrawl.foodfight.controller.ControllerException;
 import org.bitbrawl.foodfight.controller.JavaController;
@@ -60,9 +59,8 @@ public final class ControllerRunner implements AutoCloseable {
 	public ControllerRunner(Path jar, String mainClass)
 			throws IOException, ClassNotFoundException, ControllerException, InterruptedException {
 
-		URL[] jarUrls = { jar.toUri().toURL() };
 		Class<? extends JavaController> controllerClass;
-		try (URLClassLoader loader = new URLClassLoader(jarUrls)) {
+		try (ControllerLoader loader = new ControllerLoader(jar)) {
 			controllerClass = loader.loadClass(mainClass).asSubclass(JavaController.class);
 		}
 		controller = new ControllerWrapper(controllerClass);

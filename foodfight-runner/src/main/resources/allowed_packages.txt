@@ -1,0 +1,12 @@
+java.io
+java.lang
+java.lang.invoke
+java.math
+java.util
+java.util.function
+java.util.regex
+java.util.stream
+java.text
+org.bitbrawl.foodfight.controller
+org.bitbrawl.foodfight.field
+org.bitbrawl.foodfight.util
