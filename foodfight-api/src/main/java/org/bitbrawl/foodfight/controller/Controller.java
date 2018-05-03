@@ -4,6 +4,8 @@ import org.bitbrawl.foodfight.field.Field;
 import org.bitbrawl.foodfight.field.Player;
 import org.bitbrawl.foodfight.field.Team;
 
+import com.google.gson.annotations.SerializedName;
+
 import net.jcip.annotations.Immutable;
 
 /**
@@ -44,26 +46,37 @@ public interface Controller {
 	public enum Action {
 
 		/** A movement in the direction that a player is facing. */
+		@SerializedName("moveForward")
 		MOVE_FORWARD("Move forward"),
 		/** A movement in the backward direction. */
+		@SerializedName("moveBackward")
 		MOVE_BACKWARD("Move backward"),
 		/** A turn in the counter-clockwise direction. */
+		@SerializedName("turnLeft")
 		TURN_LEFT("Turn left"),
 		/** A turn in the clockwise direction. */
+		@SerializedName("turnRight")
 		TURN_RIGHT("Turn right"),
 		/** A duck, which will decrease a player's height. */
+		@SerializedName("duck")
 		DUCK("Duck"),
 		/** A pickup of a piece of food into the player's left hand. */
+		@SerializedName("pickupLeft")
 		PICKUP_LEFT("Pick up with left hand"),
 		/** A pickup of a piece of food into the player's right hand. */
+		@SerializedName("pickupRight")
 		PICKUP_RIGHT("Pick up with right hand"),
 		/** A throw from the player's left hand. */
+		@SerializedName("throwLeft")
 		THROW_LEFT("Throw from left hand"),
 		/** A throw from the player's right hand. */
+		@SerializedName("throwRight")
 		THROW_RIGHT("Throw from right hand"),
 		/** The action of eating the food in the player's left hand. */
+		@SerializedName("eatLeft")
 		EAT_LEFT("Eat from left hand"),
 		/** The action of eating the food in the player's right hand. */
+		@SerializedName("eatRight")
 		EAT_RIGHT("Eat from right hand");
 
 		private final String string;
