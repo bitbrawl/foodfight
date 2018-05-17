@@ -48,10 +48,10 @@ public final class JarController implements Controller {
 
 		this.log = log;
 
-		String runnerJar = Paths.get("lib", "foodfight-runner-0.1.0-jar-with-dependencies.jar").toAbsolutePath()
+		String runnerJar = Paths.get("lib", "foodfight-runner-1.0.0-jar-with-dependencies.jar").toAbsolutePath()
 				.toString();
 		String jarString = jar.toAbsolutePath().toString();
-		ProcessBuilder builder = new ProcessBuilder("java", "-jar", runnerJar, jarString, className);
+		ProcessBuilder builder = new ProcessBuilder("java", "-Xmx32m", "-jar", runnerJar, jarString, className);
 		Files.createFile(log);
 		builder.redirectError(log.toAbsolutePath().toFile());
 		process = builder.start();
