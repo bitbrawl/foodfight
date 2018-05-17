@@ -8,6 +8,7 @@ import java.net.URLClassLoader;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
@@ -17,21 +18,17 @@ public final class ControllerLoader extends ClassLoader implements AutoCloseable
 	private final Map<String, Class<?>> loadedClasses = new HashMap<>();
 
 	public ControllerLoader(Path jar) throws MalformedURLException {
-		super(parent(jar));
+		super(parent(Objects.requireNonNull(jar, "jar cannot be null")));
 	}
 
 	private static ClassLoader parent(Path jar) throws MalformedURLException {
-		if (jar == null)
-			throw new NullPointerException();
-
 		URL[] urls = { jar.toUri().toURL() };
 		return new URLClassLoader(urls, ControllerLoader.class.getClassLoader());
 	}
 
 	@Override
 	protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-		if (name == null)
-			throw new NullPointerException();
+		Objects.requireNonNull(name, "name cannot be null");
 
 		if (!ClassUtils.isCustomClass(name))
 			return ControllerLoader.class.getClassLoader().loadClass(name);
@@ -46,7 +43,7 @@ public final class ControllerLoader extends ClassLoader implements AutoCloseable
 		try (InputStream classStream = getParent().getResourceAsStream(ClassUtils.resourceName(name))) {
 			reader = new ClassReader(classStream);
 		} catch (IOException e) {
-			throw new ClassNotFoundException("Unable to find class: " + name, e);
+			throw new ClassNotFoundException(name, e);
 		}
 
 		reader.accept(adapter, ClassReader.SKIP_FRAMES | ClassReader.EXPAND_FRAMES);

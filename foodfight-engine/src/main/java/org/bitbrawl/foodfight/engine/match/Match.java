@@ -21,6 +21,7 @@ public final class Match {
 	private final int number;
 	private final Map<Controller, DynamicPlayer> controllers = new LinkedHashMap<>();
 	private final DynamicField field;
+	private final CharFunction<String> names;
 	private final List<FieldState> fieldStates = new ArrayList<>(Field.TOTAL_TURNS + 1);
 	private final TurnRunner turnRunner;
 	private final Consumer<FieldState> uiConsumer;
@@ -30,15 +31,17 @@ public final class Match {
 		private final int number;
 		private final FieldState field;
 		private final CharFunction<? extends Controller> controllers;
+		private final CharFunction<String> names;
 		private final TurnRunner turnRunner;
 		private Consumer<FieldState> uiConsumer = f -> {
 		};
 
 		public Builder(int number, FieldState field, CharFunction<? extends Controller> controllers,
-				TurnRunner turnRunner) {
+				CharFunction<String> names, TurnRunner turnRunner) {
 			this.number = number;
 			this.field = field;
 			this.controllers = controllers;
+			this.names = names;
 			this.turnRunner = turnRunner;
 		}
 
@@ -57,6 +60,7 @@ public final class Match {
 
 		number = builder.number;
 		field = new DynamicField(builder.field);
+		names = builder.names;
 
 		for (DynamicPlayer player : field.getDynamicPlayers())
 			controllers.put(builder.controllers.apply(player.getSymbol()), player);
@@ -93,7 +97,7 @@ public final class Match {
 		}
 
 		addFrame();
-		return new MatchHistory(number, fieldStates);
+		return new MatchHistory(number, names, fieldStates);
 
 	}
 

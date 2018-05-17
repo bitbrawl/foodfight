@@ -112,6 +112,7 @@ class Database {
 	public Iterable<MatchTemplate> createBestMatches() throws SQLException, IOException, InvalidRemoteException,
 			TransportException, GitAPIException, MavenInvocationException, CommandLineException {
 
+		logger.setLevel(Level.ALL);
 		logger.info("Creating next matches");
 
 		Division division = randomElement(Division.values());
@@ -124,6 +125,8 @@ class Database {
 			type = MatchType.FREE_FOR_ALL;
 		else
 			type = MatchType.TEAM;
+
+		logger.log(Level.INFO, "division: {0}; type: {1}", new Object[] { division, type });
 
 		List<Competitor> competitors = new ArrayList<>();
 		CompetitorPair selectedPair;
@@ -156,7 +159,8 @@ class Database {
 				return Collections.emptyList();
 
 			selectedPair = randomElement(pairs);
-			String query = "SELECT id, username FROM competitor where id = ? or id = ?";
+			logger.log(Level.INFO, "selectedPair: {0}", selectedPair);
+			String query = "SELECT id, username FROM competitor WHERE id = ? or id = ?";
 			try (PreparedStatement statement = connection.prepareStatement(query)) {
 				statement.setInt(1, selectedPair.getFirstId());
 				statement.setInt(2, selectedPair.getSecondId());
@@ -175,7 +179,7 @@ class Database {
 
 				List<Competitor> allCompetitors = new ArrayList<>();
 
-				query = "SELECT id, username FROM competitor WHERE division_id <= ? AND id != ? AND id != ?";
+				query = "SELECT id, username FROM competitor WHERE division_id <= ? AND id NOT IN (?, ?)";
 				try (PreparedStatement statement = connection.prepareStatement(query)) {
 					statement.setInt(1, division.getId());
 					statement.setInt(2, selectedPair.getFirstId());
@@ -191,7 +195,11 @@ class Database {
 
 				}
 
-				competitors.addAll(randomSubset(allCompetitors, type.getNumberOfPlayers() - 2));
+				logger.log(Level.INFO, "allCompetitors: {0}", allCompetitors);
+
+				List<Competitor> subset = randomSubset(allCompetitors, type.getNumberOfPlayers() - 2);
+				logger.log(Level.INFO, "subset: {0}", subset);
+				competitors.addAll(subset);
 				Collections.shuffle(competitors);
 
 			}
@@ -199,10 +207,15 @@ class Database {
 		}
 
 		Map<Competitor, String> versionNames = new LinkedHashMap<>();
-		for (Competitor competitor : competitors)
-			versionNames.put(competitor, setupController(competitor.getUsername()));
+		for (Competitor competitor : competitors) {
+			String versionName = setupController(competitor.getUsername());
+			if (versionName.equals("0.0.0"))
+				return Collections.emptyList();
+			versionNames.put(competitor, versionName);
+		}
 
 		List<Set<Set<Competitor>>> matchGroupings;
+		logger.log(Level.INFO, "competitors: {0}", competitors);
 
 		if (type.equals(MatchType.TEAM)) {
 
@@ -250,6 +263,7 @@ class Database {
 
 				FieldState field = new FieldGenerator(type).get();
 				Map<Character, Competitor> assignment = assignCompetitors(field, matchGrouping);
+				logger.log(Level.INFO, "versionIds: {0}", versionIds);
 				int matchId = addPlaceholderMatch(connection, field, c -> versionIds.get(assignment.get(c)));
 				MatchTemplate template = new MatchTemplate(matchId, field, assignment::get);
 				templates.add(template);
@@ -565,10 +579,11 @@ class Database {
 				}
 			}
 		});
+		Files.delete(zipPath);
 
 	}
 
-	private void uploadToYoutube(int matchId, Path videoFile) {
+	private void uploadVideo(int matchId, Path videoFile) throws IOException {
 
 		String matchName = Match.getMatchName(matchId);
 		String location = "foodfight/data/" + matchName + ".mp4";
@@ -577,6 +592,8 @@ class Database {
 		// TODO upload to YouTube instead of S3
 
 		uploadFile(videoFile, location);
+
+		Files.delete(videoFile);
 
 	}
 
@@ -823,11 +840,11 @@ class Database {
 
 	}
 
-	public void addVideo(int matchId) throws SQLException {
+	public void addVideo(int matchId) throws IOException, SQLException {
 
 		Path videoFile = config.getDataFolder().resolve(Match.getMatchName(matchId) + ".mp4");
 
-		uploadToYoutube(matchId, videoFile);
+		uploadVideo(matchId, videoFile);
 
 		try (Connection connection = connect()) {
 

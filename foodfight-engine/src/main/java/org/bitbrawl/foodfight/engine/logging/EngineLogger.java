@@ -18,30 +18,4 @@ public final class EngineLogger extends Logger {
 
 	public static final EngineLogger INSTANCE = new EngineLogger();
 
-	// private static final class EngineFormatter extends Formatter {
-	//
-	// @Override
-	// public String format(LogRecord record) {
-	//
-	// StringBuilder result = new StringBuilder();
-	// long time = record.getMillis();
-	// Level level = record.getLevel();
-	//
-	// try (java.util.Formatter stringFormatter = new
-	// java.util.Formatter(result)) {
-	//
-	// for (String line : formatMessage(record).split("\\R"))
-	// stringFormatter.format("%tT.%tL [%s] %s%n", time, time, level, line);
-	//
-	// }
-	//
-	// result.append(exceptionToString(record.getThrown()));
-	//
-	// return result.toString();
-	//
-	// }
-	//
-	//
-	// }
-
 }

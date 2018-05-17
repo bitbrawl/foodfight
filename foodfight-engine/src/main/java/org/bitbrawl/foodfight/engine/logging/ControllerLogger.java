@@ -14,7 +14,7 @@ public final class ControllerLogger extends Logger {
 		handler.setFormatter(new EngineFormatter((formatter, time, level, line) -> {
 			formatter.format("%tT.%tL [%s] [turn %d] %s%n", time, time, level, turnNumberSupplier.getAsInt(), line);
 		}));
-		addHandler(new ConsoleHandler());
+		addHandler(handler);
 	}
 
 }

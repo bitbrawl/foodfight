@@ -106,23 +106,24 @@ public final class DefaultTurnRunner implements TurnRunner {
 
 			double halfPi = 0.5 * Math.PI;
 
-			if (x < 0.0) {
+			double radius = food.getType().getRadius();
+			if (x < radius) {
 				x = -x;
-				if (heading.angle(Direction.WEST) < halfPi)
-					heading = heading.flipX();
-			} else if (x > Field.WIDTH) {
+				if (Math.abs(Direction.difference(heading, Direction.WEST)) < halfPi)
+					heading = heading.reflectAcrossY();
+			} else if (x > Field.WIDTH - radius) {
 				x = Field.WIDTH * 2.0 - x;
-				if (heading.angle(Direction.EAST) < halfPi)
-					heading = heading.flipX();
+				if (Math.abs(Direction.difference(heading, Direction.EAST)) < halfPi)
+					heading = heading.reflectAcrossY();
 			}
-			if (y < 0.0) {
+			if (y < radius) {
 				y = -y;
-				if (heading.angle(Direction.SOUTH) < halfPi)
-					heading = heading.flipY();
-			} else if (y > Field.DEPTH) {
+				if (Math.abs(Direction.difference(heading, Direction.SOUTH)) < halfPi)
+					heading = heading.reflectAcrossX();
+			} else if (y > Field.DEPTH - radius) {
 				y = Field.DEPTH * 2.0 - y;
-				if (heading.angle(Direction.NORTH) < halfPi)
-					heading = heading.flipY();
+				if (Math.abs(Direction.difference(heading, Direction.NORTH)) < halfPi)
+					heading = heading.reflectAcrossX();
 			}
 
 			height -= Food.FALL_SPEED.getAsDouble();
@@ -175,7 +176,7 @@ public final class DefaultTurnRunner implements TurnRunner {
 
 		Set<CollisionState> collisions = new HashSet<>();
 
-		Comparator<Player> playerComparator = new PlayerComparator(field);
+		Comparator<Player> playerComparator = PlayerComparator.INSTANCE;
 
 		Map<TeamState, ScoreState> scores = new HashMap<>();
 		Map<PlayerState, Double> damages = new HashMap<>();

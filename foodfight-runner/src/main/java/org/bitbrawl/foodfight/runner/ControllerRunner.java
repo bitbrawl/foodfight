@@ -53,6 +53,7 @@ public final class ControllerRunner implements AutoCloseable {
 	private final Writer outWriter = new OutputStreamWriter(System.out);
 	private final Writer writer = new BufferedWriter(outWriter);
 	private final ExecutorService executor = Executors.newSingleThreadExecutor();
+	private final ControllerLoader loader;
 	private final Controller controller;
 	private DynamicField field;
 
@@ -60,9 +61,8 @@ public final class ControllerRunner implements AutoCloseable {
 			throws IOException, ClassNotFoundException, ControllerException, InterruptedException {
 
 		Class<? extends JavaController> controllerClass;
-		try (ControllerLoader loader = new ControllerLoader(jar)) {
-			controllerClass = loader.loadClass(mainClass).asSubclass(JavaController.class);
-		}
+		loader = new ControllerLoader(jar);
+		controllerClass = loader.loadClass(mainClass).asSubclass(JavaController.class);
 		controller = new ControllerWrapper(controllerClass);
 
 	}
@@ -104,22 +104,26 @@ public final class ControllerRunner implements AutoCloseable {
 	@Override
 	public void close() throws IOException {
 		try {
-			executor.shutdown();
+			loader.close();
 		} finally {
 			try {
-				try {
-					writer.close();
-				} finally {
-					outWriter.close();
-				}
+				executor.shutdown();
 			} finally {
 				try {
-					jsonReader.close();
+					try {
+						writer.close();
+					} finally {
+						outWriter.close();
+					}
 				} finally {
 					try {
-						reader.close();
+						jsonReader.close();
 					} finally {
-						inReader.close();
+						try {
+							reader.close();
+						} finally {
+							inReader.close();
+						}
 					}
 				}
 			}

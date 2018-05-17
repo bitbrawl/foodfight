@@ -23,7 +23,6 @@ import org.bitbrawl.foodfight.engine.video.ImageEncoder;
 import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.codehaus.plexus.util.cli.CommandLineException;
 import org.eclipse.jgit.api.errors.GitAPIException;
-import org.eclipse.jgit.api.errors.InvalidRemoteException;
 import org.eclipse.jgit.api.errors.TransportException;
 
 public enum ServerEngine {
@@ -58,13 +57,14 @@ public enum ServerEngine {
 						char symbol = player.getSymbol();
 						controllers.put(symbol, database.createController(matchFolder, competitors.apply(symbol)));
 					}
-					Match match = new Match.Builder(matchId, field, controllers::get, new DefaultTurnRunner()).build();
+					CharFunction<String> names = c -> competitors.apply(c).getUsername();
+					Match match = new Match.Builder(matchId, field, controllers::get, names, new DefaultTurnRunner())
+							.build();
 					logger.log(Level.INFO, "Running {0}", matchName);
 					MatchHistory history = match.run();
 
 					if (database.updateMatch(history)) {
 						logger.info("Generating video");
-						CharFunction<String> names = c -> competitors.apply(c).getUsername();
 						Path videoFile = config.getDataFolder().resolve(matchName + ".mp4");
 						ImageEncoder.encode(history, names, videoFile);
 						database.addVideo(matchId);
@@ -75,7 +75,7 @@ public enum ServerEngine {
 				}
 
 				logger.info("sleeping");
-				Thread.sleep(1000L);
+				Thread.sleep(5000L);
 
 			} catch (IOException | TransportException e) {
 				logger.log(Level.SEVERE, "I/O problem", e);
@@ -91,8 +91,7 @@ public enum ServerEngine {
 
 	}
 
-	public static void main(String[] args) throws InvalidRemoteException, TransportException, SQLException, IOException,
-			GitAPIException, MavenInvocationException, CommandLineException, InterruptedException {
+	public static void main(String[] args) throws InterruptedException {
 		Thread.setDefaultUncaughtExceptionHandler(
 				(t, e) -> EngineLogger.INSTANCE.log(Level.SEVERE, "Problem running server engine", e));
 		INSTANCE.runMatches();

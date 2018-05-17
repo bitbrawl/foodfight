@@ -29,7 +29,7 @@ public final class DebugUtils {
 	}
 
 	@SafeVarargs
-	public static void runDebugMatch(MatchType matchType, Class<? extends JavaController>... classes) {
+	public static MatchHistory runDebugMatch(MatchType matchType, Class<? extends JavaController>... classes) {
 		Objects.requireNonNull(classes, "classes cannot be null");
 		if (classes.length <= 0)
 			throw new IllegalArgumentException("classes cannot be empty");
@@ -60,11 +60,12 @@ public final class DebugUtils {
 			controllers.put(player.getSymbol(), controller);
 		}
 
-		FrameGenerator generator = new FrameGenerator(field, c -> controllers.get(c).getClass().getSimpleName());
-		ImageFrame frame = new ImageFrame(generator.apply(field));
-		Match match = new Match.Builder(0, field, controllers::get, new DefaultTurnRunner())
-				.uiConsumer(state -> frame.updateImage(generator.apply(state))).build();
-		MatchHistory history = match.run();
+		CharFunction<String> names = c -> controllers.get(c).getClass().getSimpleName();
+		FrameGenerator generator = new FrameGenerator(field, names);
+		ImageFrame frame = new ImageFrame(generator, field);
+		Match match = new Match.Builder(0, field, controllers::get, names, new DefaultTurnRunner())
+				.uiConsumer(state -> frame.updateImage(state)).build();
+		return match.run();
 
 	}
 

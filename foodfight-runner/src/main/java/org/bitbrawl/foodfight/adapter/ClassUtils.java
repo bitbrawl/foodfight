@@ -10,28 +10,20 @@ import java.util.Set;
 
 public final class ClassUtils {
 
-	private static String dotsToSlashes(String className) {
-		return className.replace('.', '/');
-	}
-
-	private static String slashesToDots(String className) {
-		return className.replace('/', '.');
-	}
-
 	public static String resourceName(String className) {
-		return dotsToSlashes(className) + ".class";
+		return className.replace('.', '/') + ".class";
+	}
+
+	public static String readableName(String className) {
+		return className.replaceAll("[/\\$]", ".");
 	}
 
 	public static String readableName(String className, String methodName) {
-		return slashesToDots(className) + '.' + methodName;
-	}
-
-	private static String packageName(String className) {
-		return className.substring(0, className.lastIndexOf('.'));
+		return readableName(className) + '.' + methodName;
 	}
 
 	public static boolean isCustomClass(String className) {
-		className = dotsToSlashes(className);
+		className = readableName(className);
 		if (isBitBrawlClass(className))
 			return false;
 		if (isSystemClass(className))
@@ -39,34 +31,47 @@ public final class ClassUtils {
 		return true;
 	}
 
-	public static boolean isBitBrawlClass(String className) {
-		className = dotsToSlashes(className);
-		return className.startsWith("org/bitbrawl/") && !className.startsWith("org/bitbrawl/foodfight/sample/");
+	private static boolean isBitBrawlClass(String className) {
+		if (className.startsWith("org.bitbrawl.foodfight.sample."))
+			return false;
+		if (className.startsWith("org.bitbrawl.foodfighter."))
+			return false;
+		if (className.startsWith("org.bitbrawl."))
+			return true;
+		return false;
 	}
 
 	private static boolean isSystemClass(String className) {
-		if (isBitBrawlClass(className))
-			return false;
-		if (className.startsWith("java/") || className.startsWith("javax/"))
+		if (className.startsWith("java.") || className.startsWith("javax."))
 			return true;
-		if (className.startsWith("org/ietf/") || className.startsWith("org/omg/") || className.startsWith("org/w3c/")
-				|| className.startsWith("org/xml/"))
+		if (className.startsWith("org.ietf.") || className.startsWith("org.omg.") || className.startsWith("org.w3c.")
+				|| className.startsWith("org.xml."))
 			return true;
-		if (className.startsWith("sun/"))
+		if (className.startsWith("sun."))
 			return true;
 		return false;
 	}
 
 	public static boolean isAllowed(String className, String methodName, String description) {
 
-		String dotsClassName = slashesToDots(className);
-		if (!ALLOWED_PACKAGES.contains(packageName(dotsClassName)))
+		if (isCustomClass(className))
+			return true;
+
+		String methodDots = readableName(className, methodName);
+		if (ALLOWED_METHODS.contains(methodDots))
+			return true;
+		if (DISALLOWED_METHODS.contains(methodDots))
 			return false;
-		if (DISALLOWED_CLASSES.contains(dotsClassName))
+		String classDots = readableName(className);
+		if (ALLOWED_CLASSES.contains(classDots))
+			return true;
+		if (DISALLOWED_CLASSES.contains(classDots))
 			return false;
-		if (DISALLOWED_METHODS.contains(dotsClassName + '.' + methodName))
-			return false;
-		return true;
+
+		String packageSlashes = className.substring(0, className.lastIndexOf('/'));
+		String packageDots = packageSlashes.replace('/', '.');
+		return ALLOWED_PACKAGES.contains(packageDots);
+
 	}
 
 	private static final Set<String> generateSet(String resourceName) {
@@ -87,8 +92,10 @@ public final class ClassUtils {
 
 	}
 
-	private static final Set<String> ALLOWED_PACKAGES = generateSet("/allowed_packages.txt");
-	private static final Set<String> DISALLOWED_CLASSES = generateSet("/disallowed_classes.txt");
-	private static final Set<String> DISALLOWED_METHODS = generateSet("/disallowed_methods.txt");
+	private static final Set<String> ALLOWED_PACKAGES = generateSet("/allowed-packages.txt");
+	private static final Set<String> ALLOWED_CLASSES = generateSet("/allowed-classes.txt");
+	private static final Set<String> DISALLOWED_CLASSES = generateSet("/disallowed-classes.txt");
+	private static final Set<String> ALLOWED_METHODS = generateSet("/allowed-methods.txt");
+	private static final Set<String> DISALLOWED_METHODS = generateSet("/disallowed-methods.txt");
 
 }

@@ -60,9 +60,9 @@ public final class Vector {
 	 */
 	public static Vector cartesian(double x, double y) {
 		if (!Double.isFinite(x))
-			throw new IllegalArgumentException("x must be finite");
+			throw new IllegalArgumentException("x must be finite, but is: " + x);
 		if (!Double.isFinite(y))
-			throw new IllegalArgumentException("y must be finite");
+			throw new IllegalArgumentException("y must be finite, but is: " + y);
 		double magnitude = Math.hypot(x, y);
 		Direction direction = new Direction(Math.atan2(y, x));
 		return new Vector(x, y, magnitude, direction);
@@ -87,9 +87,9 @@ public final class Vector {
 	 */
 	public static Vector polar(double magnitude, Direction direction) {
 		if (!Double.isFinite(magnitude))
-			throw new IllegalArgumentException("magnitude must be finite");
+			throw new IllegalArgumentException("magnitude must be finite, but is: " + magnitude);
 		if (magnitude < 0.0)
-			throw new IllegalArgumentException("magnitude cannot be negative");
+			throw new IllegalArgumentException("magnitude cannot be negative, but is: " + magnitude);
 		Objects.requireNonNull(direction, "direction cannot be null");
 
 		double x = magnitude * Math.cos(direction.get());
@@ -189,7 +189,7 @@ public final class Vector {
 	 */
 	public Vector multiply(double scalar) {
 		if (!Double.isFinite(scalar))
-			throw new IllegalArgumentException("scalar must be finite");
+			throw new IllegalArgumentException("scalar must be finite, but is: " + scalar);
 		if (scalar > 0)
 			return new Vector(x * scalar, y * scalar, magnitude * scalar, direction);
 		if (scalar < 0)
@@ -209,10 +209,13 @@ public final class Vector {
 	 */
 	public Vector divide(double scalar) {
 		if (!Double.isFinite(scalar))
-			throw new IllegalArgumentException("scalar must be finite");
+			throw new IllegalArgumentException("scalar must be finite, but is: " + scalar);
 		if (scalar == 0.0)
 			throw new IllegalArgumentException("scalar cannot be zero");
-		return new Vector(x / scalar, y / scalar, magnitude / scalar, direction);
+		if (scalar > 0)
+			return new Vector(x / scalar, y / scalar, magnitude / scalar, direction);
+		else
+			return new Vector(x / scalar, y / scalar, magnitude / -scalar, direction.getOpposite());
 	}
 
 	/**
@@ -247,20 +250,20 @@ public final class Vector {
 
 	/**
 	 * Computes the average of the two vectors. If the two vectors represent
-	 * locations, this is equivalent to the midpoint of the two vectors.
+	 * locations, this is equivalent to the midpoint of the two locations.
 	 * 
-	 * @param vectorA
+	 * @param v1
 	 *            the first vector to average
-	 * @param vectorB
+	 * @param v2
 	 *            the second vector to average
 	 * @return the average of the two vectors
 	 * @throws NullPointerException
 	 *             if either vector is null
 	 */
-	public static Vector average(Vector vectorA, Vector vectorB) {
-		Objects.requireNonNull(vectorA, "vectorA cannot be null");
-		Objects.requireNonNull(vectorB, "vectorB cannot be null");
-		return vectorA.add(vectorB).divide(2.0);
+	public static Vector average(Vector v1, Vector v2) {
+		Objects.requireNonNull(v1, "v1 cannot be null");
+		Objects.requireNonNull(v2, "v2 cannot be null");
+		return v1.add(v2).divide(2.0);
 	}
 
 	@Override
@@ -287,9 +290,9 @@ public final class Vector {
 	public static final Vector ZERO = new Vector(0.0, 0.0, 0.0, Direction.EAST);
 
 	/**
-	 * A serializer for vectors. <b>Competitors will not use this class</b>; it
-	 * is used internally by the game engine. It serializes a vector into only
-	 * its x and y components.
+	 * A serializer for vectors. <b>Competitors should not use this class</b>;
+	 * it is used internally by the game engine. It serializes a vector into
+	 * only its x and y components.
 	 * 
 	 * @author Finn
 	 */
@@ -313,7 +316,7 @@ public final class Vector {
 	}
 
 	/**
-	 * A deserializer for vectors. <b>Competitors will not use this class</b>;
+	 * A deserializer for vectors. <b>Competitors should not use this class</b>;
 	 * it is used internally by the game engine. It deserializes a vector from
 	 * only its x and y components.
 	 * 

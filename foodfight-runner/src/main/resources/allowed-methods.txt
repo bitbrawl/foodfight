@@ -1,0 +1,12 @@
+java.lang.Runtime.availableProcessors
+java.lang.Runtime.freeMemory
+java.lang.Runtime.gc
+java.lang.Runtime.getRuntime
+java.lang.Runtime.maxMemory
+java.lang.Runtime.totalMemory
+java.lang.System.arraycopy
+java.lang.System.currentTimeMillis
+java.lang.System.gc
+java.lang.System.identityHashCode
+java.lang.System.lineSeparator
+java.lang.System.nanoTime

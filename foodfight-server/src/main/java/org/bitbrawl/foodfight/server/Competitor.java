@@ -18,4 +18,9 @@ public final class Competitor {
 		return username;
 	}
 
+	@Override
+	public String toString() {
+		return "Competitor " + id + " (" + username + ")";
+	}
+
 }

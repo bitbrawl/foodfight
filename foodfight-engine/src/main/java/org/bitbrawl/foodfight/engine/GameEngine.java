@@ -140,7 +140,8 @@ public final class GameEngine {
 		}
 
 		logger.info("Running match");
-		Match match = new Match.Builder(matchNumber, field, controllers::get, new DefaultTurnRunner()).build();
+		Match match = new Match.Builder(matchNumber, field, controllers::get, names::get, new DefaultTurnRunner())
+				.build();
 		MatchHistory history = match.run();
 
 		Path traceFile = matchData.resolve("trace.json");

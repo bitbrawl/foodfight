@@ -42,6 +42,8 @@ public final class ControllerWrapper implements Controller {
 	@Override
 	public Action playAction(Field field, Team team, Player player) {
 
+		turnNumber = field.getTurnNumber();
+
 		try {
 			return runTimed(() -> wrapped.playAction(field, team, player), (ControllerClock) wrapped.getClock());
 		} catch (InterruptedException e) {
