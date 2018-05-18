@@ -155,14 +155,19 @@ class Database {
 
 		}
 
+		logger.log(Level.INFO, "All competitors: {0}", allCompetitors);
+		logger.log(Level.INFO, "Division competitors: {0}", divisionCompetitors);
+
 		List<Competitor> competitors = new ArrayList<>(type.getNumberOfPlayers());
 
 		Collections.shuffle(allCompetitors, ThreadLocalRandom.current());
 		Collections.shuffle(divisionCompetitors, ThreadLocalRandom.current());
 		while (true) {
 
-			if (divisionCompetitors.isEmpty())
+			if (divisionCompetitors.isEmpty()) {
+				logger.log(Level.WARNING, "No division competitors left; all competitors: {0}", allCompetitors);
 				return Collections.emptyList();
+			}
 
 			Competitor randomCompetitor = divisionCompetitors.remove(divisionCompetitors.size() - 1);
 			allCompetitors.remove(randomCompetitor);
@@ -177,8 +182,10 @@ class Database {
 
 		while (true) {
 
-			if (allCompetitors.isEmpty())
+			if (allCompetitors.isEmpty()) {
+				logger.warning("no competitors left in allCompetitors");
 				return Collections.emptyList();
+			}
 
 			Competitor nextCompetitor = allCompetitors.remove(allCompetitors.size() - 1);
 
