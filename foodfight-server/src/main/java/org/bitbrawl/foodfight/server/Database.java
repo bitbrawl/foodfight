@@ -459,7 +459,7 @@ class Database {
 		Path configPath = localRepo.resolve("src").resolve("main").resolve("resources").resolve("config.json");
 		CompetitorConfig competitorConfig = CompetitorConfig.getInstance(configPath);
 
-		Path jar = localRepo.resolve("target").resolve("foodfighter-" + username + "-0.1.1.jar");
+		Path jar = localRepo.resolve("target").resolve("foodfighter-" + username + "-1.0.0.jar");
 		Path log = matchFolder.resolve(username + ".log");
 		return new JarController(jar, competitorConfig.getMainClass(), log);
 
