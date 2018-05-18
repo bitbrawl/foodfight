@@ -64,9 +64,8 @@ public interface Food extends Locatable {
 
 	/**
 	 * A type of food. Each food type has slightly different properties. Here is
-	 * a table representing the various food types:
-	 * <p>
-	 * <table BORDER CELLPADDING=3 CELLSPACING=1>
+	 * a table representing the various food types: <table BORDER CELLPADDING=3
+	 * CELLSPACING=1 summary="Food types and their properties">
 	 * <tr>
 	 * <th>Name</th>
 	 * <th>Radius</th>

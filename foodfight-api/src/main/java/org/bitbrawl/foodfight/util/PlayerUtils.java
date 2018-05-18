@@ -301,9 +301,8 @@ public final class PlayerUtils {
 	/**
 	 * Gets the multiplier for a player's movement, based on their energy.
 	 * Whenever a player moves, the distance traveled will be multiplied by the
-	 * result of this function. The answer is equivalent to
-	 * e<sup><sup>energy</sup>&frasl;<sub>{@link Player#MAX_ENERGY}</sub> -
-	 * 1</sup>
+	 * result of this function. The answer is equivalent to e<sup>energy /
+	 * {@link Player#MAX_ENERGY} - 1</sup>
 	 * 
 	 * @param energy
 	 *            the player's energy

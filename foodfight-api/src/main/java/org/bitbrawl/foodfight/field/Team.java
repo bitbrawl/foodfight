@@ -54,7 +54,7 @@ public interface Team {
 	 * that the score does not keep track of which player on the team earned the
 	 * points, only that someone on the team did.
 	 * 
-	 * @return
+	 * @return the team's score
 	 */
 	public Score getScore();
 
