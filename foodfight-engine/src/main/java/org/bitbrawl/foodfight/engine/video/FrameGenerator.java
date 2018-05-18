@@ -216,7 +216,7 @@ public final class FrameGenerator implements Function<FieldState, BufferedImage>
 				String pointsText = "Points: " + team.getScore().getTotalPoints();
 				graphics.drawString(pointsText, playerBoxStartX + 100, playerBoxStartY + 60);
 				String energyText = "Energy: " + Math.round(player.getEnergy());
-				graphics.drawString(energyText, playerBoxStartX + 10, playerBoxStartY + 110);
+				graphics.drawString(energyText, playerBoxStartX + 10, playerBoxStartY + 120);
 
 				BufferedImage sideImage = getProfile(player);
 				int height = playerBoxStartY + PLAYER_FRAME_HEIGHT - sideImage.getHeight()
