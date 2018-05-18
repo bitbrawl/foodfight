@@ -3,9 +3,7 @@ package org.bitbrawl.foodfight.sample;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.bitbrawl.foodfight.controller.JavaController;
-import org.bitbrawl.foodfight.engine.match.DebugUtils;
 import org.bitbrawl.foodfight.field.Field;
-import org.bitbrawl.foodfight.field.MatchType;
 import org.bitbrawl.foodfight.field.Player;
 import org.bitbrawl.foodfight.field.Team;
 import org.bitbrawl.foodfight.util.PlayerUtils;
@@ -31,10 +29,6 @@ public final class WallsController extends JavaController {
 		if (turnLeft)
 			return Action.TURN_LEFT;
 		return Action.TURN_RIGHT;
-	}
-
-	public static void main(String[] args) {
-		DebugUtils.runDebugMatch(MatchType.TEAM, RandomController.class, WallsController.class);
 	}
 
 }
