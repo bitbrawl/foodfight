@@ -70,12 +70,7 @@ public enum ServerEngine {
 						database.addVideo(matchId);
 					}
 
-					Thread.sleep(1000L);
-
 				}
-
-				logger.info("sleeping");
-				Thread.sleep(5000L);
 
 			} catch (IOException | TransportException e) {
 				logger.log(Level.SEVERE, "I/O problem", e);

@@ -130,81 +130,37 @@ class Database {
 
 		logger.log(Level.INFO, "division: {0}; type: {1}", new Object[] { division, type });
 
-		List<Competitor> competitors = new ArrayList<>();
-		CompetitorPair selectedPair;
-		Map<Integer, Competitor> pairCompetitors = new HashMap<>();
+		List<Competitor> competitors;
 
 		try (Connection connection = connect()) {
 
-			List<CompetitorPair> pairs = new LinkedList<>();
+			List<Competitor> allCompetitors = new ArrayList<>();
+			List<Competitor> divisionCompetitors = new ArrayList<>();
 
-			try (PreparedStatement statement = connection.prepareStatement(selectPairingsQuery)) {
-				statement.setInt(1, type.getNumberOfPlayers());
-				statement.setInt(2, division.getId());
-				statement.setInt(3, division.getId());
-				statement.setInt(4, division.getId());
-				statement.setInt(5, division.getId());
-				statement.setInt(6, type.getNumberOfPlayers());
-				statement.setInt(7, division.getId());
-				statement.setInt(8, division.getId());
-				statement.setInt(9, division.getId());
-				statement.setInt(10, division.getId());
-				try (ResultSet result = statement.executeQuery()) {
-					while (result.next()) {
-						pairs.add(new CompetitorPair(result.getInt("first_competitor"),
-								result.getInt("second_competitor")));
-					}
-				}
-			}
-
-			if (pairs.isEmpty())
-				return Collections.emptyList();
-
-			selectedPair = randomElement(pairs);
-			logger.log(Level.INFO, "selectedPair: {0}", selectedPair);
-			String query = "SELECT id, username FROM competitor WHERE id = ? or id = ?";
+			String query = "SELECT id, username, division_id FROM competitor WHERE division_id <= ?";
 			try (PreparedStatement statement = connection.prepareStatement(query)) {
-				statement.setInt(1, selectedPair.getFirstId());
-				statement.setInt(2, selectedPair.getSecondId());
+				statement.setInt(1, division.getId());
+
 				try (ResultSet result = statement.executeQuery()) {
 					while (result.next()) {
 						int id = result.getInt("id");
 						String username = result.getString("username");
 						Competitor competitor = new Competitor(id, username);
-						pairCompetitors.put(id, competitor);
-						competitors.add(competitor);
+						allCompetitors.add(competitor);
+						int divisionId = result.getInt("division_id");
+						if (divisionId == division.getId())
+							divisionCompetitors.add(competitor);
 					}
 				}
-			}
-
-			if (!type.equals(MatchType.DUEL)) {
-
-				List<Competitor> allCompetitors = new ArrayList<>();
-
-				query = "SELECT id, username FROM competitor WHERE division_id <= ? AND id NOT IN (?, ?)";
-				try (PreparedStatement statement = connection.prepareStatement(query)) {
-					statement.setInt(1, division.getId());
-					statement.setInt(2, selectedPair.getFirstId());
-					statement.setInt(3, selectedPair.getSecondId());
-
-					try (ResultSet result = statement.executeQuery()) {
-						while (result.next()) {
-							int id = result.getInt("id");
-							String username = result.getString("username");
-							allCompetitors.add(new Competitor(id, username));
-						}
-					}
-
-				}
-
-				logger.log(Level.INFO, "allCompetitors: {0}", allCompetitors);
-
-				List<Competitor> subset = randomSubset(allCompetitors, type.getNumberOfPlayers() - 2);
-				logger.log(Level.INFO, "subset: {0}", subset);
-				competitors.addAll(subset);
-				Collections.shuffle(competitors);
 
 			}
+
+			Competitor randomCompetitor = randomElement(divisionCompetitors);
+			allCompetitors.remove(randomCompetitor);
+
+			competitors = randomSubset(allCompetitors, type.getNumberOfPlayers() - 1);
+			competitors.add(randomCompetitor);
+			Collections.shuffle(competitors, ThreadLocalRandom.current());
 
 		}
 
@@ -251,15 +207,6 @@ class Database {
 
 			for (Competitor competitor : competitors)
 				versionIds.put(competitor, getVersionId(connection, competitor.getId(), versionNames.get(competitor)));
-
-			int firstVersionId = versionIds.get(pairCompetitors.get(selectedPair.getFirstId()));
-			int secondVersionId = versionIds.get(pairCompetitors.get(selectedPair.getSecondId()));
-			int pairingId = selectPairwise(connection, type, firstVersionId, secondVersionId);
-			String update = "UPDATE pairwise_result SET focus_count = focus_count + 1 WHERE id = ?";
-			try (PreparedStatement statement = connection.prepareStatement(update)) {
-				statement.setInt(1, pairingId);
-				statement.executeUpdate();
-			}
 
 			for (Set<Set<Competitor>> matchGrouping : matchGroupings) {
 
