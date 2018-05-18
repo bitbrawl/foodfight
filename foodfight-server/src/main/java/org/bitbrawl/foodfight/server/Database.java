@@ -78,6 +78,8 @@ import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.model.CannedAccessControlList;
+import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -603,7 +605,9 @@ class Database {
 		AWSCredentialsProvider provider = new AWSStaticCredentialsProvider(credentials);
 		AmazonS3 s3Client = AmazonS3ClientBuilder.standard().withCredentials(provider).withRegion(Regions.US_EAST_2)
 				.build();
-		s3Client.putObject("data.bitbrawl.org", location, file.toFile());
+		PutObjectRequest request = new PutObjectRequest("data.bitbrawl.org", location, file.toFile())
+				.withCannedAcl(CannedAccessControlList.PublicRead);
+		s3Client.putObject(request);
 	}
 
 	private boolean addMatchResult(Connection connection, MatchHistory match, Set<Integer> versionsA,
