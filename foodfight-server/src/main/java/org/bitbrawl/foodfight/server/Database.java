@@ -372,6 +372,13 @@ class Database {
 				throw new IOException("Unsuccessful pull");
 		}
 
+		Path configPath = localRepo.resolve("src").resolve("main").resolve("resources").resolve("config.json");
+		CompetitorConfig competitorConfig = CompetitorConfig.getInstance(configPath);
+		String versionName = competitorConfig.getVersion().replaceAll("[^\\d\\.]", "");
+
+		if (versionName.equals("0.0.0"))
+			return "0.0.0";
+
 		logger.log(Level.INFO, "Building project: {0}", username);
 		InvocationRequest request = new DefaultInvocationRequest();
 		request.setBaseDirectory(localRepo.toFile());
@@ -387,9 +394,7 @@ class Database {
 		if (result.getExitCode() != 0)
 			throw new IOException("Unsuccessful Maven install");
 
-		Path configPath = localRepo.resolve("src").resolve("main").resolve("resources").resolve("config.json");
-		CompetitorConfig config = CompetitorConfig.getInstance(configPath);
-		return config.getVersion().replaceAll("[^\\d\\.]", "");
+		return versionName;
 
 	}
 
