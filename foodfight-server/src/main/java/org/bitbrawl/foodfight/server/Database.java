@@ -130,12 +130,10 @@ class Database {
 
 		logger.log(Level.INFO, "division: {0}; type: {1}", new Object[] { division, type });
 
-		List<Competitor> competitors;
+		List<Competitor> allCompetitors = new ArrayList<>();
+		List<Competitor> divisionCompetitors = new ArrayList<>();
 
 		try (Connection connection = connect()) {
-
-			List<Competitor> allCompetitors = new ArrayList<>();
-			List<Competitor> divisionCompetitors = new ArrayList<>();
 
 			String query = "SELECT id, username, division_id FROM competitor WHERE division_id <= ?";
 			try (PreparedStatement statement = connection.prepareStatement(query)) {
@@ -155,14 +153,47 @@ class Database {
 
 			}
 
-			Competitor randomCompetitor = randomElement(divisionCompetitors);
+		}
+
+		List<Competitor> competitors = new ArrayList<>(type.getNumberOfPlayers());
+
+		Collections.shuffle(allCompetitors, ThreadLocalRandom.current());
+		Collections.shuffle(divisionCompetitors, ThreadLocalRandom.current());
+		while (true) {
+
+			if (divisionCompetitors.isEmpty())
+				return Collections.emptyList();
+
+			Competitor randomCompetitor = divisionCompetitors.remove(divisionCompetitors.size() - 1);
 			allCompetitors.remove(randomCompetitor);
 
-			competitors = randomSubset(allCompetitors, type.getNumberOfPlayers() - 1);
-			competitors.add(randomCompetitor);
-			Collections.shuffle(competitors, ThreadLocalRandom.current());
+			String versionName = setupController(randomCompetitor.getUsername());
+			if (!versionName.equals("0.0.0")) {
+				competitors.add(randomCompetitor);
+				break;
+			}
 
 		}
+
+		while (true) {
+
+			if (allCompetitors.isEmpty())
+				return Collections.emptyList();
+
+			Competitor nextCompetitor = allCompetitors.remove(allCompetitors.size() - 1);
+
+			String versionName = setupController(nextCompetitor.getUsername());
+			if (versionName.equals("0.0.0"))
+				continue;
+
+			competitors.add(nextCompetitor);
+
+			if (competitors.size() >= type.getNumberOfPlayers())
+				break;
+
+		}
+
+		Collections.shuffle(competitors, ThreadLocalRandom.current());
 
 		Map<Competitor, String> versionNames = new LinkedHashMap<>();
 		for (Competitor competitor : competitors) {
@@ -815,17 +846,6 @@ class Database {
 
 	private static final <E> E randomElement(E[] array) {
 		return array[ThreadLocalRandom.current().nextInt(array.length)];
-	}
-
-	private static final <E> E randomElement(List<E> list) {
-		return list.get(ThreadLocalRandom.current().nextInt(list.size()));
-	}
-
-	private static final <E> List<E> randomSubset(List<E> set, int size) {
-		int setSize = set.size();
-		for (int i = 0; i < size; i++)
-			Collections.swap(set, i, ThreadLocalRandom.current().nextInt(i, setSize));
-		return set.subList(0, size);
 	}
 
 	private static final Gson gson = new GsonBuilder().enableComplexMapKeySerialization()
