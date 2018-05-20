@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Writer;
 import java.net.URI;
+import java.nio.file.DirectoryStream;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.FileVisitResult;
@@ -549,8 +550,10 @@ class Database {
 		try (FileSystem zipSystem = FileSystems.newFileSystem(uri, env)) {
 			Path jarTrace = zipSystem.getPath("trace.json");
 			Files.copy(traceFile, jarTrace);
-			for (Path file : Files.newDirectoryStream(folder, "*.log"))
-				Files.copy(file, zipSystem.getPath(file.getFileName().toString()));
+			try (DirectoryStream<Path> stream = Files.newDirectoryStream(folder, "*.log")) {
+				for (Path file : stream)
+					Files.copy(file, zipSystem.getPath(file.getFileName().toString()));
+			}
 		}
 		String location = "foodfight/data/" + matchName + ".zip";
 		uploadFile(zipPath, location);
