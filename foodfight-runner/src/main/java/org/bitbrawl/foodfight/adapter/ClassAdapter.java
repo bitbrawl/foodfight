@@ -1,6 +1,7 @@
 package org.bitbrawl.foodfight.adapter;
 
 import java.util.List;
+import java.util.Objects;
 
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
@@ -18,10 +19,7 @@ public final class ClassAdapter extends ClassNode {
 	public ClassAdapter(ClassWriter writer) {
 		super(Opcodes.ASM5);
 
-		if (writer == null)
-			throw new NullPointerException();
-
-		cv = writer;
+		cv = Objects.requireNonNull(writer, "writer cannot be null");
 
 	}
 

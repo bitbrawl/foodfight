@@ -36,9 +36,6 @@ public final class ControllerLoader extends ClassLoader implements AutoCloseable
 		if (loadedClasses.containsKey(name))
 			return loadedClasses.get(name);
 
-		ClassWriter writer = new ClassWriter(ClassWriter.COMPUTE_FRAMES);
-		ClassAdapter adapter = new ClassAdapter(writer);
-
 		ClassReader reader;
 		try (InputStream classStream = getParent().getResourceAsStream(ClassUtils.resourceName(name))) {
 			reader = new ClassReader(classStream);
@@ -46,7 +43,10 @@ public final class ControllerLoader extends ClassLoader implements AutoCloseable
 			throw new ClassNotFoundException(name, e);
 		}
 
-		reader.accept(adapter, ClassReader.SKIP_FRAMES | ClassReader.EXPAND_FRAMES);
+		ClassWriter writer = new JarClassWriter(reader, this);
+		ClassAdapter adapter = new ClassAdapter(writer);
+
+		reader.accept(adapter, ClassReader.SKIP_FRAMES);
 
 		byte[] result = writer.toByteArray();
 
