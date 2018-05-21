@@ -26,6 +26,7 @@ import org.bitbrawl.foodfight.util.Vector;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonIOException;
+import com.google.gson.JsonSyntaxException;
 import com.google.gson.stream.JsonReader;
 
 public final class JarController implements Controller {
@@ -76,7 +77,7 @@ public final class JarController implements Controller {
 			writer.flush();
 			Action result = gson.fromJson(jsonReader, Action.class);
 			return result;
-		} catch (IOException | JsonIOException e) {
+		} catch (IOException | JsonIOException | JsonSyntaxException e) {
 			EngineLogger.INSTANCE.log(Level.SEVERE, "Problem communicating with controller", e);
 			isClosed = true;
 			return null;
