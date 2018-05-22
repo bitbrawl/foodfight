@@ -103,9 +103,9 @@ public interface Player extends Locatable {
 	/** The rotational range for a piece of food that can be picked up. */
 	public static final double REACH_RANGE = Math.PI / 3.0;
 	/** The direction of a player's left arm relative to their heading. */
-	public static final double LEFT_ARM_DIRECTION = -Math.PI / 6.0;
+	public static final double LEFT_ARM_DIRECTION = Math.PI / 6.0;
 	/** The direction of a player's right arm relative to their heading. */
-	public static final double RIGHT_ARM_DIRECTION = Math.PI / 6.0;
+	public static final double RIGHT_ARM_DIRECTION = -Math.PI / 6.0;
 	/** The radius for a player's collisions with other field objects. */
 	public static final double COLLISION_RADIUS = 50.0;
 	/** The maximum amount of energy that a player can have. */

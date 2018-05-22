@@ -157,13 +157,11 @@ public final class PlayerUtils {
 		Vector playerLocation = player.getLocation();
 		Vector foodLocation = food.getLocation();
 
-		double deltaX = foodLocation.getX() - playerLocation.getX();
-		double deltaY = foodLocation.getY() - playerLocation.getY();
-		double distanceSquared = deltaX * deltaX + deltaY * deltaY;
-		if (distanceSquared > Player.REACH_DISTANCE * Player.REACH_DISTANCE)
+		Vector translation = foodLocation.subtract(playerLocation);
+		if (translation.getMagnitude() > Player.REACH_DISTANCE)
 			return false;
 
-		Direction toFood = Vector.cartesian(deltaX, deltaY).getDirection();
+		Direction toFood = translation.getDirection();
 		return Math.abs(Direction.difference(getArmDirection(player, hand), toFood)) < Player.REACH_RANGE / 2;
 
 	}
